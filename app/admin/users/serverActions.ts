@@ -15,7 +15,7 @@ export async function getAllUsersWithEmails() {
 
   if (profilesError) {
     console.error('Error fetching profiles:', profilesError)
-    return { profiles: [], sessionCounts: {}, postCounts: {} }
+    return { profiles: [], emails: {}, sessionCounts: {}, postCounts: {} }
   }
 
   // Get session counts
@@ -52,7 +52,7 @@ export async function getAllUsersWithEmails() {
 
   const authData = await authUsers.json()
   const emails: Record<string, string> = {}
-  
+
   if (authData.users) {
     authData.users.forEach((u: any) => {
       emails[u.id] = u.email

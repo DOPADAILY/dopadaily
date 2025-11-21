@@ -71,9 +71,9 @@ export default function UsersPage() {
         // Merge data
         const usersData = profiles.map((p) => ({
           ...p,
-          email: emails[p.id] || 'N/A',
-          session_count: sessionCounts[p.id] || 0,
-          post_count: postCounts[p.id] || 0,
+          email: (emails && emails[p.id]) || 'N/A',
+          session_count: (sessionCounts && sessionCounts[p.id]) || 0,
+          post_count: (postCounts && postCounts[p.id]) || 0,
         }))
 
         setUsers(usersData)
@@ -226,7 +226,7 @@ export default function UsersPage() {
                     <tr key={u.id} className="hover:bg-backplate transition-colors">
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <UserAvatar username={u.username} email={u.email} size="sm" />
+                          <UserAvatar username={u.username || undefined} email={u.email || undefined} size="sm" />
                           <div>
                             <div className="text-sm font-medium text-on-surface">
                               {u.username || 'Anonymous'}
@@ -247,11 +247,10 @@ export default function UsersPage() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                            u.role === 'admin'
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${u.role === 'admin'
                               ? 'bg-primary/10 text-primary'
                               : 'bg-neutral-medium/10 text-neutral-medium'
-                          }`}
+                            }`}
                         >
                           {u.role === 'admin' ? <ShieldCheck size={14} /> : <Shield size={14} />}
                           {u.role || 'user'}
@@ -336,7 +335,7 @@ export default function UsersPage() {
           onConfirm={() => {
             const form = document.createElement('form')
             form.method = 'POST'
-            
+
             const userIdInput = document.createElement('input')
             userIdInput.type = 'hidden'
             userIdInput.name = 'userId'
@@ -349,7 +348,7 @@ export default function UsersPage() {
               roleInput.name = 'currentRole'
               roleInput.value = confirmAction.user.role || 'user'
               form.appendChild(roleInput)
-              
+
               document.body.appendChild(form)
               const formData = new FormData(form)
               toggleUserRole(formData)
@@ -362,35 +361,35 @@ export default function UsersPage() {
               const formData = new FormData(form)
               unbanUser(formData)
             }
-            
+
             document.body.removeChild(form)
           }}
           title={
             confirmAction.type === 'promote'
               ? 'Promote to Admin?'
               : confirmAction.type === 'demote'
-              ? 'Demote to User?'
-              : confirmAction.type === 'ban'
-              ? 'Ban User?'
-              : 'Unban User?'
+                ? 'Demote to User?'
+                : confirmAction.type === 'ban'
+                  ? 'Ban User?'
+                  : 'Unban User?'
           }
           message={
             confirmAction.type === 'promote'
               ? `Grant admin access to ${confirmAction.user.username || confirmAction.user.email}? They will have full access to all admin features.`
               : confirmAction.type === 'demote'
-              ? `Remove admin access from ${confirmAction.user.username || confirmAction.user.email}? They will become a regular user.`
-              : confirmAction.type === 'ban'
-              ? `Ban ${confirmAction.user.username || confirmAction.user.email}? They will not be able to access the app.`
-              : `Unban ${confirmAction.user.username || confirmAction.user.email}? They will regain access to the app.`
+                ? `Remove admin access from ${confirmAction.user.username || confirmAction.user.email}? They will become a regular user.`
+                : confirmAction.type === 'ban'
+                  ? `Ban ${confirmAction.user.username || confirmAction.user.email}? They will not be able to access the app.`
+                  : `Unban ${confirmAction.user.username || confirmAction.user.email}? They will regain access to the app.`
           }
           confirmText={
             confirmAction.type === 'promote'
               ? 'Promote'
               : confirmAction.type === 'demote'
-              ? 'Demote'
-              : confirmAction.type === 'ban'
-              ? 'Ban User'
-              : 'Unban User'
+                ? 'Demote'
+                : confirmAction.type === 'ban'
+                  ? 'Ban User'
+                  : 'Unban User'
           }
           variant={
             confirmAction.type === 'ban' ? 'danger' : confirmAction.type === 'unban' ? 'success' : 'warning'
