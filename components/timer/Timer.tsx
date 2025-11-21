@@ -45,30 +45,28 @@ export default function Timer() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-10">
-      
+
       {/* Mode Toggles */}
-      <div className="inline-flex gap-2 p-1.5 bg-backplate rounded-xl border border-border">
+      <div className="flex w-full max-w-md gap-2 p-1.5 bg-backplate rounded-xl border border-border">
         <button
           onClick={() => setMode('focus')}
-          className={`flex items-center gap-2.5 px-6 py-3 rounded-lg transition-all font-medium cursor-pointer ${
-            mode === 'focus'
+          className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-lg transition-all font-medium cursor-pointer ${mode === 'focus'
               ? 'bg-primary text-on-primary shadow-md'
               : 'text-on-surface-secondary hover:text-on-surface hover:bg-surface'
-          }`}
+            }`}
         >
-          <Brain size={20} />
-          <span>Focus Time</span>
+          <Brain size={18} className="sm:w-5 sm:h-5" />
+          <span className="text-sm sm:text-base">Focus</span>
         </button>
         <button
           onClick={() => setMode('break')}
-          className={`flex items-center gap-2.5 px-6 py-3 rounded-lg transition-all font-medium cursor-pointer ${
-            mode === 'break'
+          className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-lg transition-all font-medium cursor-pointer ${mode === 'break'
               ? 'bg-secondary text-on-primary shadow-md'
               : 'text-on-surface-secondary hover:text-on-surface hover:bg-surface'
-          }`}
+            }`}
         >
-          <Coffee size={20} />
-          <span>Break Time</span>
+          <Coffee size={18} className="sm:w-5 sm:h-5" />
+          <span className="text-sm sm:text-base">Break</span>
         </button>
       </div>
 
@@ -98,7 +96,7 @@ export default function Timer() {
             strokeLinecap="round"
           />
         </svg>
-        
+
         {/* Time Display */}
         <div className="text-center">
           <div className="text-7xl font-bold font-mono text-on-surface tracking-tight">
