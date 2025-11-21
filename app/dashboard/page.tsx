@@ -14,40 +14,58 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  // Fetch all dashboard data in parallel
-  const [
-    { data: profile },
-    { data: todaySessions, count: todaySessionCount },
-    { data: weekSessions },
-    { count: userPostsCount },
-    { count: totalPostsCount },
-    { data: allSessions },
-    { data: recentSessions }
-  ] = await Promise.all([
-    // Profile
-    supabase.from('profiles').select('username').eq('id', user.id).single(),
-    // Today's Sessions
-    supabase.from('focus_sessions').select('duration_seconds', { count: 'exact' }).eq('user_id', user.id).gte('completed_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
-    // Week's Sessions
-    supabase.from('focus_sessions').select('duration_seconds').eq('user_id', user.id).gte('completed_at', new Date(new Date().setDate(new Date().getDate() - new Date().getDay())).toISOString()),
-    // User Posts Count
-    supabase.from('forum_posts').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-    // Total Posts Count
-    supabase.from('forum_posts').select('*', { count: 'exact', head: true }),
-    // All Sessions (for streak)
-    supabase.from('focus_sessions').select('completed_at').eq('user_id', user.id).order('completed_at', { ascending: false }),
-    // Recent Sessions
-    supabase.from('focus_sessions').select('completed_at, duration_seconds').eq('user_id', user.id).gte('completed_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()).order('completed_at', { ascending: false }).limit(5)
-  ])
+  // Get user profile for username
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+
+  // Get today's focus sessions
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+
+  const { data: todaySessions, count: todaySessionCount } = await supabase
+    .from('focus_sessions')
+    .select('duration_seconds', { count: 'exact' })
+    .eq('user_id', user.id)
+    .gte('completed_at', startOfToday.toISOString())
 
   // Calculate today's total time in minutes
   const todayTotalMinutes = Math.round(todaySessions?.reduce((sum, session) => sum + (session.duration_seconds / 60), 0) || 0)
 
-  // Calculate week's total time
+  // Get this week's sessions
+  const startOfWeek = new Date()
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+  startOfWeek.setHours(0, 0, 0, 0)
+
+  const { data: weekSessions } = await supabase
+    .from('focus_sessions')
+    .select('duration_seconds')
+    .eq('user_id', user.id)
+    .gte('completed_at', startOfWeek.toISOString())
+
   const weekTotalHours = Math.floor((weekSessions?.reduce((sum, session) => sum + (session.duration_seconds / 60), 0) || 0) / 60)
   const weekTotalMinutes = Math.round((weekSessions?.reduce((sum, session) => sum + (session.duration_seconds / 60), 0) || 0) % 60)
 
+  // Get user's forum posts count
+  const { count: userPostsCount } = await supabase
+    .from('forum_posts')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+
+  // Get total community posts
+  const { count: totalPostsCount } = await supabase
+    .from('forum_posts')
+    .select('*', { count: 'exact', head: true })
+
   // Calculate streak (consecutive days with at least 1 session)
+  const { data: allSessions } = await supabase
+    .from('focus_sessions')
+    .select('completed_at')
+    .eq('user_id', user.id)
+    .order('completed_at', { ascending: false })
+
   let streak = 0
   if (allSessions && allSessions.length > 0) {
     const today = new Date()
@@ -86,6 +104,15 @@ export default async function DashboardPage() {
       }
     }
   }
+
+  // Get recent sessions for "Today's Focus Goals"
+  const { data: recentSessions } = await supabase
+    .from('focus_sessions')
+    .select('completed_at, duration_seconds')
+    .eq('user_id', user.id)
+    .gte('completed_at', startOfToday.toISOString())
+    .order('completed_at', { ascending: false })
+    .limit(5)
 
   // Calculate milestone progress (every 5 sessions)
   const totalSessions = allSessions?.length || 0

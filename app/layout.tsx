@@ -4,7 +4,6 @@ import "./globals.css";
 import ConditionalSidebar from "@/components/ConditionalSidebar";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { MobileSidebarProvider } from "@/components/MobileSidebar";
-import { AuthProvider } from "@/contexts/AuthContext";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -31,14 +30,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${montserrat.variable} ${dmSans.variable}`}>
       <body className="antialiased bg-surface text-on-surface">
-        <AuthProvider>
-          <MobileSidebarProvider>
-            <ConditionalSidebar />
-            <ConditionalLayout>
-              {children}
-            </ConditionalLayout>
-          </MobileSidebarProvider>
-        </AuthProvider>
+        <MobileSidebarProvider>
+          <ConditionalSidebar />
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
+        </MobileSidebarProvider>
       </body>
     </html>
   );

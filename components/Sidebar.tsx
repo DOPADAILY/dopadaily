@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { createClient } from '@/utils/supabase/client'
+import { useEffect, useState } from 'react'
 
 interface SidebarProps {
   onNavigate?: () => void
@@ -12,14 +13,36 @@ interface SidebarProps {
 export default function Sidebar({ onNavigate }: SidebarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
-  const { isAdmin, loading } = useAuth()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        setIsAdmin(profile?.role === 'admin')
+      }
+    }
+    checkAdmin()
+  }, [])
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/'
     return pathname?.startsWith(path)
   }
 
-  // No longer needed – logout handled by /logout route
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    onNavigate?.()
+    window.location.href = '/login'
+  }
 
   const handleNavClick = () => {
     onNavigate?.()
@@ -31,10 +54,6 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
     { href: '/forum', label: 'Community', icon: MessageSquare },
     { href: '/reminders', label: 'Reminders', icon: Bell },
   ]
-
-  if (!loading && isAdmin) {
-    navItems.push({ href: '/admin', label: 'Admin', icon: ShieldCheck })
-  }
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-surface-elevated border-r border-border flex flex-col">
@@ -69,23 +88,34 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
           )
         })}
 
-        {loading && (
-          <div className="px-3 py-2.5">
-            <div className="h-5 bg-backplate rounded animate-pulse w-24"></div>
-          </div>
+        {/* Admin Link - Only shown to admins */}
+        {isAdmin && (
+          <>
+            <div className="border-t border-border my-3"></div>
+            <Link
+              href="/admin"
+              onClick={handleNavClick}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${isActive('/admin')
+                ? 'bg-primary text-on-primary shadow-sm'
+                : 'text-on-surface-secondary hover:bg-backplate hover:text-on-surface'
+                }`}
+            >
+              <ShieldCheck size={20} />
+              Admin Panel
+            </Link>
+          </>
         )}
       </nav>
 
       {/* User Section */}
       <div className="p-4 border-t border-border">
-        <Link
-          href="/logout"
-          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-on-surface-secondary hover:bg-backplate hover:text-on-surface transition-all"
-          onClick={onNavigate}
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-on-surface-secondary hover:bg-backplate hover:text-on-surface transition-all cursor-pointer"
         >
           <LogOut size={20} />
           Logout
-        </Link>
+        </button>
       </div>
     </aside>
   )

@@ -14,34 +14,55 @@ export default async function AdminDashboard() {
     redirect('/login')
   }
 
-  // Fetch all data in parallel
-  const [
-    { data: profile },
-    { count: totalUsers },
-    { count: totalSessions },
-    { count: totalPosts },
-    { count: activeMilestones },
-    { count: globalReminders },
-    { data: recentAudit },
-    { count: newUsersToday }
-  ] = await Promise.all([
-    // Profile
-    supabase.from('profiles').select('username').eq('id', user.id).single(),
-    // Total Users
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
-    // Total Sessions
-    supabase.from('focus_sessions').select('*', { count: 'exact', head: true }),
-    // Total Posts
-    supabase.from('forum_posts').select('*', { count: 'exact', head: true }),
-    // Active Milestones
-    supabase.from('milestones').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    // Global Reminders
-    supabase.from('reminders').select('*', { count: 'exact', head: true }).eq('is_global', true),
-    // Recent Audit
-    supabase.from('admin_audit_log').select('*, profiles(username)').order('created_at', { ascending: false }).limit(10),
-    // New Users Today
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
-  ])
+  // Get user profile for username
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+
+  // Get total users count
+  const { count: totalUsers } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+
+  // Get total sessions count
+  const { count: totalSessions } = await supabase
+    .from('focus_sessions')
+    .select('*', { count: 'exact', head: true })
+
+  // Get total forum posts
+  const { count: totalPosts } = await supabase
+    .from('forum_posts')
+    .select('*', { count: 'exact', head: true })
+
+  // Get active milestones count
+  const { count: activeMilestones } = await supabase
+    .from('milestones')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_active', true)
+
+  // Get global reminders count
+  const { count: globalReminders } = await supabase
+    .from('reminders')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_global', true)
+
+  // Get recent admin activity
+  const { data: recentAudit } = await supabase
+    .from('admin_audit_log')
+    .select('*, profiles(username)')
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  // Get today's new users
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+
+  const { count: newUsersToday } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', startOfToday.toISOString())
 
   return (
     <div className="min-h-screen bg-background">
