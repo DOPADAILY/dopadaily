@@ -5,6 +5,7 @@ import { Award, Plus, Edit2, Trash2, CheckCircle, XCircle, Save } from 'lucide-r
 import { createClient } from '@/utils/supabase/client'
 import Modal from '@/components/Modal'
 import ConfirmModal from '@/components/ConfirmModal'
+import Select from '@/components/Select'
 import BackButton from '@/components/BackButton'
 import Toast from '@/components/Toast'
 
@@ -19,125 +20,126 @@ interface Milestone {
 }
 
 interface MilestonesClientProps {
-  milestones: Milestone[]
+    milestones: Milestone[]
 }
 
 export default function MilestonesClient({ milestones: initialMilestones }: MilestonesClientProps) {
-  const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones)
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null)
-  const [deletingMilestone, setDeletingMilestone] = useState<Milestone | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' | 'info' | 'warning' } | null>(null)
-  const [showToast, setShowToast] = useState(false)
+    const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones)
+    const [isCreateOpen, setIsCreateOpen] = useState(false)
+    const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null)
+    const [deletingMilestone, setDeletingMilestone] = useState<Milestone | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' | 'info' | 'warning' } | null>(null)
+    const [showToast, setShowToast] = useState(false)
 
-  const emojiOptions = ['🌱', '🎯', '⚡', '🔥', '💎', '👑', '🏆', '🧘', '✨', '🌟', '💪', '🎉', '🚀', '🌈', '🎨']
+    const emojiOptions = ['🌱', '🎯', '⚡', '🔥', '💎', '👑', '🏆', '🧘', '✨', '🌟', '💪', '🎉', '🚀', '🌈', '🎨']
+    const emojiSelectOptions = emojiOptions.map(emoji => ({ value: emoji, label: emoji }))
 
-  // Update local state when parent updates
-  useEffect(() => {
-    setMilestones(initialMilestones)
-  }, [initialMilestones])
+    // Update local state when parent updates
+    useEffect(() => {
+        setMilestones(initialMilestones)
+    }, [initialMilestones])
 
-  const fetchMilestones = async () => {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('milestones')
-      .select('*')
-      .order('session_threshold', { ascending: true })
+    const fetchMilestones = async () => {
+        const supabase = createClient()
+        const { data, error } = await supabase
+            .from('milestones')
+            .select('*')
+            .order('session_threshold', { ascending: true })
 
-    if (error) {
-      console.error('Error fetching milestones:', error)
-    } else {
-      setMilestones(data || [])
+        if (error) {
+            console.error('Error fetching milestones:', error)
+        } else {
+            setMilestones(data || [])
+        }
     }
-  }
 
-  const handleCreateMilestone = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    const handleCreateMilestone = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setIsSubmitting(true)
 
-    const formData = new FormData(e.currentTarget)
-    const supabase = createClient()
+        const formData = new FormData(e.currentTarget)
+        const supabase = createClient()
 
-    const { error } = await supabase.from('milestones').insert({
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-      session_threshold: parseInt(formData.get('session_threshold') as string),
-      badge_icon: formData.get('badge_icon') as string,
-      badge_color: formData.get('badge_color') as string,
-      is_active: formData.get('is_active') === 'on',
-    })
+        const { error } = await supabase.from('milestones').insert({
+            title: formData.get('title') as string,
+            description: formData.get('description') as string,
+            session_threshold: parseInt(formData.get('session_threshold') as string),
+            badge_icon: formData.get('badge_icon') as string,
+            badge_color: formData.get('badge_color') as string,
+            is_active: formData.get('is_active') === 'on',
+        })
 
-    setIsSubmitting(false)
+        setIsSubmitting(false)
 
-    if (error) {
-      console.error('Error creating milestone:', error)
-      setToast({ message: 'Failed to create milestone', variant: 'error' })
-      setShowToast(true)
-    } else {
-      setIsCreateOpen(false)
-      await fetchMilestones()
-      setToast({ message: 'Milestone created successfully', variant: 'success' })
-      setShowToast(true)
+        if (error) {
+            console.error('Error creating milestone:', error)
+            setToast({ message: 'Failed to create milestone', variant: 'error' })
+            setShowToast(true)
+        } else {
+            setIsCreateOpen(false)
+            await fetchMilestones()
+            setToast({ message: 'Milestone created successfully', variant: 'success' })
+            setShowToast(true)
+        }
     }
-  }
 
-  const handleUpdateMilestone = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    const handleUpdateMilestone = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setIsSubmitting(true)
 
-    const formData = new FormData(e.currentTarget)
-    const supabase = createClient()
+        const formData = new FormData(e.currentTarget)
+        const supabase = createClient()
 
-    const { error } = await supabase
-      .from('milestones')
-      .update({
-        title: formData.get('title') as string,
-        description: formData.get('description') as string,
-        session_threshold: parseInt(formData.get('session_threshold') as string),
-        badge_icon: formData.get('badge_icon') as string,
-        badge_color: formData.get('badge_color') as string,
-        is_active: formData.get('is_active') === 'on',
-      })
-      .eq('id', parseInt(formData.get('id') as string))
+        const { error } = await supabase
+            .from('milestones')
+            .update({
+                title: formData.get('title') as string,
+                description: formData.get('description') as string,
+                session_threshold: parseInt(formData.get('session_threshold') as string),
+                badge_icon: formData.get('badge_icon') as string,
+                badge_color: formData.get('badge_color') as string,
+                is_active: formData.get('is_active') === 'on',
+            })
+            .eq('id', parseInt(formData.get('id') as string))
 
-    setIsSubmitting(false)
+        setIsSubmitting(false)
 
-    if (error) {
-      console.error('Error updating milestone:', error)
-      setToast({ message: 'Failed to update milestone', variant: 'error' })
-      setShowToast(true)
-    } else {
-      setEditingMilestone(null)
-      await fetchMilestones()
-      setToast({ message: 'Milestone updated successfully', variant: 'success' })
-      setShowToast(true)
+        if (error) {
+            console.error('Error updating milestone:', error)
+            setToast({ message: 'Failed to update milestone', variant: 'error' })
+            setShowToast(true)
+        } else {
+            setEditingMilestone(null)
+            await fetchMilestones()
+            setToast({ message: 'Milestone updated successfully', variant: 'success' })
+            setShowToast(true)
+        }
     }
-  }
 
-  const handleDeleteMilestone = async () => {
-    if (!deletingMilestone) return
-    setIsSubmitting(true)
+    const handleDeleteMilestone = async () => {
+        if (!deletingMilestone) return
+        setIsSubmitting(true)
 
-    const supabase = createClient()
-    const { error } = await supabase
-      .from('milestones')
-      .delete()
-      .eq('id', deletingMilestone.id)
+        const supabase = createClient()
+        const { error } = await supabase
+            .from('milestones')
+            .delete()
+            .eq('id', deletingMilestone.id)
 
-    setIsSubmitting(false)
-    setDeletingMilestone(null)
+        setIsSubmitting(false)
+        setDeletingMilestone(null)
 
-    if (error) {
-      console.error('Error deleting milestone:', error)
-      setToast({ message: 'Failed to delete milestone', variant: 'error' })
-      setShowToast(true)
-    } else {
-      await fetchMilestones()
-      setToast({ message: 'Milestone deleted successfully', variant: 'success' })
-      setShowToast(true)
+        if (error) {
+            console.error('Error deleting milestone:', error)
+            setToast({ message: 'Failed to delete milestone', variant: 'error' })
+            setShowToast(true)
+        } else {
+            await fetchMilestones()
+            setToast({ message: 'Milestone deleted successfully', variant: 'success' })
+            setShowToast(true)
+        }
     }
-  }
 
     return (
         <>
@@ -182,20 +184,20 @@ export default function MilestonesClient({ milestones: initialMilestones }: Mile
                             </p>
 
                             <div className="flex items-center gap-2 pt-4 border-t border-border">
-                <button
-                  onClick={() => setEditingMilestone(milestone)}
-                  className="btn btn-ghost text-primary hover:bg-primary/10 flex items-center gap-2 flex-1 justify-center"
-                >
-                  <Edit2 size={16} />
-                  <span className="hidden sm:inline">Edit</span>
-                </button>
-                <button
-                  onClick={() => setDeletingMilestone(milestone)}
-                  className="btn btn-ghost text-error hover:bg-error/10 flex items-center gap-2 flex-1 justify-center"
-                >
-                  <Trash2 size={16} />
-                  <span className="hidden sm:inline">Delete</span>
-                </button>
+                                <button
+                                    onClick={() => setEditingMilestone(milestone)}
+                                    className="btn btn-ghost text-primary hover:bg-primary/10 flex items-center gap-2 flex-1 justify-center"
+                                >
+                                    <Edit2 size={16} />
+                                    <span className="hidden sm:inline">Edit</span>
+                                </button>
+                                <button
+                                    onClick={() => setDeletingMilestone(milestone)}
+                                    className="btn btn-ghost text-error hover:bg-error/10 flex items-center gap-2 flex-1 justify-center"
+                                >
+                                    <Trash2 size={16} />
+                                    <span className="hidden sm:inline">Delete</span>
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -217,13 +219,13 @@ export default function MilestonesClient({ milestones: initialMilestones }: Mile
                 </div>
             )}
 
-      {/* Create Modal */}
-      <Modal
-        isOpen={isCreateOpen}
-        onClose={() => !isSubmitting && setIsCreateOpen(false)}
-        title="Create New Milestone"
-      >
-        <form onSubmit={handleCreateMilestone} className="space-y-6">
+            {/* Create Modal */}
+            <Modal
+                isOpen={isCreateOpen}
+                onClose={() => !isSubmitting && setIsCreateOpen(false)}
+                title="Create New Milestone"
+            >
+                <form onSubmit={handleCreateMilestone} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label htmlFor="title" className="block text-sm font-semibold text-on-surface mb-2">
@@ -259,18 +261,13 @@ export default function MilestonesClient({ milestones: initialMilestones }: Mile
                         <label htmlFor="badge_icon" className="block text-sm font-semibold text-on-surface mb-2">
                             Icon (Emoji) *
                         </label>
-                        <select
+                        <Select
                             id="badge_icon"
                             name="badge_icon"
+                            options={emojiSelectOptions}
+                            defaultValue="🌱"
                             required
-                            className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none"
-                        >
-                            {emojiOptions.map((emoji) => (
-                                <option key={emoji} value={emoji}>
-                                    {emoji}
-                                </option>
-                            ))}
-                        </select>
+                        />
                     </div>
 
                     <div>
@@ -314,8 +311,8 @@ export default function MilestonesClient({ milestones: initialMilestones }: Mile
                     </div>
 
                     <div className="flex items-center gap-4 pt-4 border-t border-border">
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             disabled={isSubmitting}
                             className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -343,14 +340,14 @@ export default function MilestonesClient({ milestones: initialMilestones }: Mile
                 </form>
             </Modal>
 
-      {/* Edit Modal */}
-      {editingMilestone && (
-        <Modal
-          isOpen={!!editingMilestone}
-          onClose={() => !isSubmitting && setEditingMilestone(null)}
-          title="Edit Milestone"
-        >
-          <form onSubmit={handleUpdateMilestone} className="space-y-6">
+            {/* Edit Modal */}
+            {editingMilestone && (
+                <Modal
+                    isOpen={!!editingMilestone}
+                    onClose={() => !isSubmitting && setEditingMilestone(null)}
+                    title="Edit Milestone"
+                >
+                    <form onSubmit={handleUpdateMilestone} className="space-y-6">
                         <input type="hidden" name="id" value={editingMilestone.id} />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -388,19 +385,13 @@ export default function MilestonesClient({ milestones: initialMilestones }: Mile
                             <label htmlFor="edit-badge-icon" className="block text-sm font-semibold text-on-surface mb-2">
                                 Icon (Emoji) *
                             </label>
-                            <select
+                            <Select
                                 id="edit-badge-icon"
                                 name="badge_icon"
-                                required
+                                options={emojiSelectOptions}
                                 defaultValue={editingMilestone.badge_icon}
-                                className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none"
-                            >
-                                {emojiOptions.map((emoji) => (
-                                    <option key={emoji} value={emoji}>
-                                        {emoji}
-                                    </option>
-                                ))}
-                            </select>
+                                required
+                            />
                         </div>
 
                         <div>
@@ -443,33 +434,33 @@ export default function MilestonesClient({ milestones: initialMilestones }: Mile
                             </label>
                         </div>
 
-            <div className="flex items-center gap-4 pt-4 border-t border-border">
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save size={20} />
-                    Save Changes
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingMilestone(null)}
-                className="btn btn-ghost"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-            </div>
+                        <div className="flex items-center gap-4 pt-4 border-t border-border">
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save size={20} />
+                                        Save Changes
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setEditingMilestone(null)}
+                                className="btn btn-ghost"
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </form>
                 </Modal>
             )}

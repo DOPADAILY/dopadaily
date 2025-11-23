@@ -9,6 +9,7 @@ import { MobileMenuButton } from '@/components/MobileSidebar'
 import BackButton from '@/components/BackButton'
 import Modal from '@/components/Modal'
 import ConfirmModal from '@/components/ConfirmModal'
+import Select from '@/components/Select'
 import Toast from '@/components/Toast'
 import { deleteDailyTip, deleteForumPost } from './actions'
 import PostDetailModal from './PostDetailModal'
@@ -410,17 +411,18 @@ export default function ContentPage() {
                 />
               </div>
               <div className="sm:w-48">
-                <select
+                <Select
                   value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                >
-                  <option value="all">All Categories</option>
-                  <option value="question">Questions</option>
-                  <option value="discussion">Discussions</option>
-                  <option value="achievement">Achievements</option>
-                  <option value="other">Other</option>
-                </select>
+                  onChange={(value) => setFilterCategory(value)}
+                  options={[
+                    { value: 'all', label: 'All Categories' },
+                    { value: 'question', label: 'Questions' },
+                    { value: 'discussion', label: 'Discussions' },
+                    { value: 'achievement', label: 'Achievements' },
+                    { value: 'other', label: 'Other' }
+                  ]}
+                  placeholder="Filter by category"
+                />
               </div>
             </div>
 
@@ -536,17 +538,18 @@ export default function ContentPage() {
             <label htmlFor="category" className="block text-sm font-semibold text-on-surface mb-2">
               Category *
             </label>
-            <select
+            <Select
               id="category"
               name="category"
+              options={[
+                { value: 'focus', label: 'Focus' },
+                { value: 'wellness', label: 'Wellness' },
+                { value: 'productivity', label: 'Productivity' },
+                { value: 'mindfulness', label: 'Mindfulness' }
+              ]}
+              defaultValue="focus"
               required
-              className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none"
-            >
-              <option value="focus">Focus</option>
-              <option value="wellness">Wellness</option>
-              <option value="productivity">Productivity</option>
-              <option value="mindfulness">Mindfulness</option>
-            </select>
+            />
           </div>
 
           <div className="flex items-center gap-2">

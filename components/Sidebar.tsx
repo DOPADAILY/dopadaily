@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck, Award } from 'lucide-react'
+import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck, Award, Headphones } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 
@@ -51,6 +51,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/focus', label: 'Focus Timer', icon: Brain },
+    { href: '/sounds', label: 'Ambient Sounds', icon: Headphones },
     { href: '/achievements', label: 'Achievements', icon: Award },
     { href: '/forum', label: 'Community', icon: MessageSquare },
     { href: '/reminders', label: 'Reminders', icon: Bell },

@@ -11,13 +11,15 @@ interface SelectOption {
 }
 
 interface SelectProps {
-  name: string
-  id: string
+  name?: string
+  id?: string
   options: SelectOption[]
   defaultValue?: string
+  value?: string
   placeholder?: string
   className?: string
   required?: boolean
+  disabled?: boolean
   onChange?: (value: string) => void
 }
 
@@ -26,15 +28,21 @@ export default function Select({
   id,
   options,
   defaultValue,
+  value: controlledValue,
   placeholder = 'Select an option',
   className = '',
   required = false,
+  disabled = false,
   onChange,
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [selectedValue, setSelectedValue] = useState(defaultValue || options[0]?.value || '')
+  const [internalValue, setInternalValue] = useState(defaultValue || options[0]?.value || '')
   const containerRef = useRef<HTMLDivElement>(null)
   const hiddenInputRef = useRef<HTMLInputElement>(null)
+
+  // Use controlled value if provided, otherwise use internal state
+  const isControlled = controlledValue !== undefined
+  const selectedValue = isControlled ? controlledValue : internalValue
 
   const selectedOption = options.find(opt => opt.value === selectedValue)
 
@@ -63,10 +71,12 @@ export default function Select({
   }, [isOpen])
 
   const handleSelect = (value: string) => {
-    setSelectedValue(value)
+    if (!isControlled) {
+      setInternalValue(value)
+    }
     setIsOpen(false)
     onChange?.(value)
-    
+
     // Trigger form validation
     if (hiddenInputRef.current) {
       hiddenInputRef.current.value = value
@@ -89,7 +99,8 @@ export default function Select({
       {/* Custom Select Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
         className={`
           w-full px-4 py-3 rounded-lg
           border border-border bg-surface-elevated
@@ -98,6 +109,7 @@ export default function Select({
           transition-all duration-200
           hover:border-primary/50 hover:shadow-sm
           focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
+          disabled:opacity-50 disabled:cursor-not-allowed
           ${isOpen ? 'border-primary ring-2 ring-primary/30 shadow-sm' : ''}
         `}
       >
@@ -118,9 +130,8 @@ export default function Select({
         </div>
         <ChevronDown
           size={18}
-          className={`text-neutral-medium transition-transform duration-200 shrink-0 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
+          className={`text-neutral-medium transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''
+            }`}
         />
       </button>
 
@@ -138,10 +149,9 @@ export default function Select({
                   flex items-center gap-3
                   transition-colors duration-150
                   hover:bg-primary/10
-                  ${
-                    selectedValue === option.value
-                      ? 'bg-primary/10 text-on-surface'
-                      : 'text-on-surface'
+                  ${selectedValue === option.value
+                    ? 'bg-primary/10 text-on-surface'
+                    : 'text-on-surface'
                   }
                 `}
               >
@@ -149,9 +159,8 @@ export default function Select({
                   <span className="text-lg shrink-0">{option.icon}</span>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className={`font-medium text-sm truncate ${
-                    selectedValue === option.value ? 'text-primary' : ''
-                  }`}>
+                  <div className={`font-medium text-sm truncate ${selectedValue === option.value ? 'text-primary' : ''
+                    }`}>
                     {option.label}
                   </div>
                   {option.description && (

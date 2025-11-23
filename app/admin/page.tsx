@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
-import { Users, Award, Bell, MessageSquare, TrendingUp, Settings, FileText, ShieldCheck, UserPlus, Ban, Activity } from 'lucide-react'
+import { Users, Award, Bell, MessageSquare, TrendingUp, Settings, FileText, ShieldCheck, UserPlus, Ban, Activity, Music } from 'lucide-react'
 import StatCard from '@/components/StatCard'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
@@ -199,6 +199,18 @@ export default async function AdminDashboard() {
                 <div>
                   <h3 className="font-semibold text-on-surface">Content</h3>
                   <p className="text-xs text-on-surface-secondary">Tips & moderation</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/admin/sounds" className="group card hover:border-secondary transition-all hover:shadow-md">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Music size={24} className="text-secondary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-on-surface">Sounds</h3>
+                  <p className="text-xs text-on-surface-secondary">Ambient sounds library</p>
                 </div>
               </div>
             </Link>

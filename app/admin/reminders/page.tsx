@@ -9,6 +9,7 @@ import { MobileMenuButton } from '@/components/MobileSidebar'
 import BackButton from '@/components/BackButton'
 import Modal from '@/components/Modal'
 import ConfirmModal from '@/components/ConfirmModal'
+import Select from '@/components/Select'
 import Toast from '@/components/Toast'
 import { deleteGlobalReminder } from '../content/actions'
 
@@ -148,7 +149,7 @@ export default function AdminRemindersPage() {
   const handleEditReminder = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!editingReminder) return
-    
+
     setIsSubmitting(true)
 
     const formData = new FormData(e.currentTarget)
@@ -407,16 +408,17 @@ export default function AdminRemindersPage() {
             <label htmlFor="category" className="block text-sm font-semibold text-on-surface mb-2">
               Category
             </label>
-            <select
+            <Select
               id="category"
               name="category"
-              className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none"
-            >
-              <option value="wellness">Wellness</option>
-              <option value="focus">Focus</option>
-              <option value="social">Social</option>
-              <option value="achievement">Achievement</option>
-            </select>
+              options={[
+                { value: 'wellness', label: 'Wellness' },
+                { value: 'focus', label: 'Focus' },
+                { value: 'social', label: 'Social' },
+                { value: 'achievement', label: 'Achievement' }
+              ]}
+              defaultValue="wellness"
+            />
           </div>
 
           <div>
@@ -436,16 +438,17 @@ export default function AdminRemindersPage() {
             <label htmlFor="recurrence_pattern" className="block text-sm font-semibold text-on-surface mb-2">
               Recurrence (Optional)
             </label>
-            <select
+            <Select
               id="recurrence_pattern"
               name="recurrence_pattern"
-              className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none"
-            >
-              <option value="">None</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
+              options={[
+                { value: '', label: 'None' },
+                { value: 'daily', label: 'Daily' },
+                { value: 'weekly', label: 'Weekly' },
+                { value: 'monthly', label: 'Monthly' }
+              ]}
+              defaultValue=""
+            />
           </div>
 
           <div className="flex items-center gap-4 pt-4 border-t border-border">
@@ -479,9 +482,9 @@ export default function AdminRemindersPage() {
       </Modal>
 
       {/* Edit Modal */}
-      <Modal 
-        isOpen={editingReminder !== null} 
-        onClose={() => setEditingReminder(null)} 
+      <Modal
+        isOpen={editingReminder !== null}
+        onClose={() => setEditingReminder(null)}
         title="Edit Global Reminder"
       >
         <form onSubmit={handleEditReminder} className="space-y-4">
@@ -518,17 +521,17 @@ export default function AdminRemindersPage() {
             <label htmlFor="edit-category" className="block text-sm font-semibold text-on-surface mb-2">
               Category
             </label>
-            <select
+            <Select
               id="edit-category"
               name="category"
+              options={[
+                { value: 'wellness', label: 'Wellness' },
+                { value: 'focus', label: 'Focus' },
+                { value: 'social', label: 'Social' },
+                { value: 'achievement', label: 'Achievement' }
+              ]}
               defaultValue={editingReminder?.category}
-              className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none"
-            >
-              <option value="wellness">Wellness</option>
-              <option value="focus">Focus</option>
-              <option value="social">Social</option>
-              <option value="achievement">Achievement</option>
-            </select>
+            />
           </div>
 
           <div>
@@ -549,17 +552,17 @@ export default function AdminRemindersPage() {
             <label htmlFor="edit-recurrence_pattern" className="block text-sm font-semibold text-on-surface mb-2">
               Recurrence (Optional)
             </label>
-            <select
+            <Select
               id="edit-recurrence_pattern"
               name="recurrence_pattern"
+              options={[
+                { value: '', label: 'None' },
+                { value: 'daily', label: 'Daily' },
+                { value: 'weekly', label: 'Weekly' },
+                { value: 'monthly', label: 'Monthly' }
+              ]}
               defaultValue={editingReminder?.recurrence_pattern || ''}
-              className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none"
-            >
-              <option value="">None</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
+            />
           </div>
 
           <div className="flex items-center gap-4 pt-4 border-t border-border">
