@@ -10,10 +10,37 @@ import ReminderNotifications from '@/components/ReminderNotifications'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-  if (!user) {
+  // Don't redirect if there's a network issue - show error state instead
+  const { cookies } = await import('next/headers')
+  const networkIssue = (await cookies()).get('network-issue')?.value === 'true'
+
+  if (!user && !networkIssue) {
     redirect('/login')
+  }
+
+  // If network issue, show a simplified error state
+  if (networkIssue && !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="card text-center p-8 max-w-md">
+          <Brain size={48} className="text-primary mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-on-surface mb-2">Connection Issue</h2>
+          <p className="text-on-surface-secondary mb-4">
+            We're having trouble connecting to the server. Your session is still active. The page will automatically retry when your connection is restored.
+          </p>
+          <Link href="/dashboard" className="btn btn-primary">
+            Retry Now
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Type guard: At this point user must exist (would have redirected or returned above)
+  if (!user) {
+    return null // This should never execute, but satisfies TypeScript
   }
 
   // Get user profile with preferences

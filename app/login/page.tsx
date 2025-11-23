@@ -6,6 +6,7 @@ import { Brain, Loader2, Sparkles } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense, useState, useTransition, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import PasswordInput from '@/components/PasswordInput'
 
 function LoginContent() {
   const searchParams = useSearchParams()
@@ -106,25 +107,27 @@ function LoginContent() {
 
                   {/* Password Input */}
                   <div className="flex w-full flex-col gap-[6px]">
-                    <label
-                      htmlFor="password"
-                      className="text-[14px] font-semibold leading-[20px] text-on-surface"
-                    >
-                      Password
-                    </label>
-                    <div className="relative w-full rounded-[8px] border border-border bg-surface-elevated focus-within:border-primary transition-colors">
-                      <div className="box-border flex w-full items-center gap-[8px] overflow-clip rounded-[inherit] px-[14px] py-[10px]">
-                        <input
-                          id="password"
-                          name="password"
-                          type="password"
-                          placeholder="Enter your password"
-                          required
-                          disabled={loading}
-                          className="min-w-0 flex-1 bg-transparent text-[14px] font-normal leading-[20px] text-on-surface outline-none placeholder:text-neutral-medium disabled:opacity-50"
-                        />
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <label
+                        htmlFor="password"
+                        className="text-[14px] font-semibold leading-[20px] text-on-surface"
+                      >
+                        Password
+                      </label>
+                      <Link
+                        href="/forgot-password"
+                        className="text-[12px] font-medium text-primary hover:underline"
+                      >
+                        Forgot?
+                      </Link>
                     </div>
+                    <PasswordInput
+                      id="password"
+                      name="password"
+                      placeholder="Enter your password"
+                      required
+                      disabled={loading}
+                    />
                   </div>
                 </div>
               </div>
@@ -278,25 +281,27 @@ function LoginContent() {
               </div>
 
               <div className="flex flex-col gap-[6px]">
-                <label
-                  htmlFor="password-mobile"
-                  className="text-[14px] font-semibold leading-[20px] text-on-surface"
-                >
-                  Password
-                </label>
-                <div className="rounded-[8px] border border-border bg-surface-elevated focus-within:border-primary transition-colors">
-                  <div className="flex items-center px-[14px] py-[10px]">
-                    <input
-                      id="password-mobile"
-                      name="password"
-                      type="password"
-                      placeholder="Enter your password"
-                      required
-                      disabled={loading}
-                      className="w-full bg-transparent text-[14px] font-normal leading-[20px] text-on-surface outline-none placeholder:text-neutral-medium disabled:opacity-50"
-                    />
-                  </div>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="password-mobile"
+                    className="text-[14px] font-semibold leading-[20px] text-on-surface"
+                  >
+                    Password
+                  </label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-[12px] font-medium text-primary hover:underline"
+                  >
+                    Forgot?
+                  </Link>
                 </div>
+                <PasswordInput
+                  id="password-mobile"
+                  name="password"
+                  placeholder="Enter your password"
+                  required
+                  disabled={loading}
+                />
               </div>
 
               <button

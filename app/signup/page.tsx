@@ -6,6 +6,7 @@ import { Brain, Loader2, Heart, Users, Zap } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense, useState, useTransition, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import PasswordInput from '@/components/PasswordInput'
 
 function SignupContent() {
     const searchParams = useSearchParams()
@@ -200,20 +201,14 @@ function SignupContent() {
                                         >
                                             Password
                                         </label>
-                                        <div className="relative w-full rounded-[8px] border border-border bg-surface-elevated focus-within:border-primary transition-colors">
-                                            <div className="box-border flex w-full items-center gap-[8px] overflow-clip rounded-[inherit] px-[14px] py-[10px]">
-                                                <input
-                                                    id="password"
-                                                    name="password"
-                                                    type="password"
-                                                    placeholder="Create a password (min. 6 characters)"
-                                                    required
-                                                    minLength={6}
-                                                    disabled={loading}
-                                                    className="min-w-0 flex-1 bg-transparent text-[14px] font-normal leading-[20px] text-on-surface outline-none placeholder:text-neutral-medium disabled:opacity-50"
-                                                />
-                                            </div>
-                                        </div>
+                                        <PasswordInput
+                                            id="password"
+                                            name="password"
+                                            placeholder="Create a password (min. 6 characters)"
+                                            required
+                                            minLength={6}
+                                            disabled={loading}
+                                        />
                                         <p className="text-[12px] text-on-surface-secondary">Must be at least 6 characters</p>
                                     </div>
                                 </div>
@@ -408,20 +403,14 @@ function SignupContent() {
                                 >
                                     Password
                                 </label>
-                                <div className="rounded-[8px] border border-border bg-surface-elevated focus-within:border-primary transition-colors">
-                                    <div className="flex items-center px-[14px] py-[10px]">
-                                        <input
-                                            id="password-mobile"
-                                            name="password"
-                                            type="password"
-                                            placeholder="Create a password (min. 6 characters)"
-                                            required
-                                            minLength={6}
-                                            disabled={loading}
-                                            className="w-full bg-transparent text-[14px] font-normal leading-[20px] text-on-surface outline-none placeholder:text-neutral-medium disabled:opacity-50"
-                                        />
-                                    </div>
-                                </div>
+                                <PasswordInput
+                                    id="password-mobile"
+                                    name="password"
+                                    placeholder="Create a password (min. 6 characters)"
+                                    required
+                                    minLength={6}
+                                    disabled={loading}
+                                />
                                 <p className="text-[12px] text-on-surface-secondary">Must be at least 6 characters</p>
                             </div>
 

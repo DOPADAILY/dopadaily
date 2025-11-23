@@ -62,7 +62,18 @@ export async function middleware(request: NextRequest) {
     // The session cookie is still valid, just can't reach Supabase
     if (authError && isNetworkError(authError)) {
       console.warn('[Middleware] Network error, allowing request to continue')
+      // Set a temporary flag to tell pages not to redirect during network issues
+      response.cookies.set('network-issue', 'true', {
+        maxAge: 60, // Expire after 60 seconds
+        httpOnly: true,
+        sameSite: 'lax'
+      })
       return response
+    }
+
+    // Clear the network issue flag if everything is working
+    if (user && response.cookies.get('network-issue')) {
+      response.cookies.delete('network-issue')
     }
 
     // Check if user is banned
@@ -127,8 +138,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
-     * - login, signup, banned pages (allow access)
+     * - login, signup, banned, forgot-password, reset-password pages (allow access)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|login|signup|banned).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|login|signup|banned|forgot-password|reset-password).*)',
   ],
 }
