@@ -19,13 +19,16 @@ interface AchievementModalProps {
 }
 
 export default function AchievementModal({ isOpen, onClose, milestone }: AchievementModalProps) {
-    const [showConfetti, setShowConfetti] = useState(false)
+    const [confettiKey, setConfettiKey] = useState(0)
 
     useEffect(() => {
         if (isOpen) {
-            setShowConfetti(true)
-        } else {
-            setShowConfetti(false)
+            // Regenerate confetti every 3 seconds
+            const interval = setInterval(() => {
+                setConfettiKey(prev => prev + 1)
+            }, 3000)
+
+            return () => clearInterval(interval)
         }
     }, [isOpen])
 
@@ -33,12 +36,12 @@ export default function AchievementModal({ isOpen, onClose, milestone }: Achieve
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            {/* Confetti Effect */}
-            {showConfetti && (
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {/* Confetti Effect - Regenerates continuously */}
+            {isOpen && (
+                <div key={confettiKey} className="absolute inset-0 pointer-events-none overflow-hidden">
                     {[...Array(30)].map((_, i) => (
                         <div
-                            key={i}
+                            key={`${confettiKey}-${i}`}
                             className="absolute animate-confetti"
                             style={{
                                 left: `${Math.random() * 100}%`,
