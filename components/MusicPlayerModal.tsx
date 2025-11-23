@@ -73,14 +73,23 @@ export default function MusicPlayerModal({ sound, isOpen, onClose, onPlayCountUp
                 }
             }
         }
-    }, [isOpen, sound.id, isMuted, volume, isLooping])
+    }, [isOpen, sound.id])
 
+    // Update volume when it changes (without recreating audio)
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.volume = isMuted ? 0 : volume
         }
     }, [volume, isMuted])
 
+    // Update volume when it changes (without recreating audio)
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.volume = isMuted ? 0 : volume
+        }
+    }, [volume, isMuted])
+
+    // Update loop when it changes (without recreating audio)
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.loop = isLooping
