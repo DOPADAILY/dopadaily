@@ -183,8 +183,8 @@ export default function MusicPlayerModal() {
                             toggleLoop()
                         }}
                         className={`p-3 rounded-full transition-all ${isLooping
-                                ? 'bg-primary/20 text-primary'
-                                : 'hover:bg-backplate text-on-surface-secondary'
+                            ? 'bg-primary/20 text-primary'
+                            : 'hover:bg-backplate text-on-surface-secondary'
                             }`}
                         title={isLooping ? 'Looping enabled' : 'Looping disabled'}
                     >

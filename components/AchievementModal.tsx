@@ -24,15 +24,10 @@ export default function AchievementModal({ isOpen, onClose, milestone }: Achieve
     useEffect(() => {
         if (isOpen) {
             setShowConfetti(true)
-            // Auto-close after 5 seconds
-            const timer = setTimeout(() => {
-                onClose()
-            }, 5000)
-            return () => clearTimeout(timer)
         } else {
             setShowConfetti(false)
         }
-    }, [isOpen, onClose])
+    }, [isOpen])
 
     if (!isOpen || !milestone) return null
 
