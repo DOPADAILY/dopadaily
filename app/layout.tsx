@@ -4,6 +4,7 @@ import "./globals.css";
 import ConditionalSidebar from "@/components/ConditionalSidebar";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { MobileSidebarProvider } from "@/components/MobileSidebar";
+import MiniPlayer from "@/components/MiniPlayer";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -35,6 +36,7 @@ export default function RootLayout({
           <ConditionalLayout>
         {children}
           </ConditionalLayout>
+          <MiniPlayer />
         </MobileSidebarProvider>
       </body>
     </html>

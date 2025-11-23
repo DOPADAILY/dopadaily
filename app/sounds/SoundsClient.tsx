@@ -8,6 +8,7 @@ import { MobileMenuButton } from '@/components/MobileSidebar'
 import Select from '@/components/Select'
 import MusicPlayerModal from '@/components/MusicPlayerModal'
 import { isNetworkError } from '@/utils/errorHandling'
+import { useAudioStore } from '@/stores/audioStore'
 
 interface AmbientSound {
     id: string
@@ -51,58 +52,59 @@ const categoryOptions = [
 export default function SoundsClient({ user, profile, initialSounds }: SoundsClientProps) {
     const [sounds, setSounds] = useState<AmbientSound[]>(initialSounds)
     const [filteredSounds, setFilteredSounds] = useState<AmbientSound[]>(initialSounds)
-     const [searchQuery, setSearchQuery] = useState('')
-     const [filterCategory, setFilterCategory] = useState('')
-     const [selectedSound, setSelectedSound] = useState<AmbientSound | null>(null)
-     const [isOffline, setIsOffline] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [filterCategory, setFilterCategory] = useState('')
+    const [isOffline, setIsOffline] = useState(false)
 
-     useEffect(() => {
-         const supabase = createClient()
+    const { loadSound, isModalOpen, closeModal } = useAudioStore()
 
-         // Subscribe to real-time updates
-         const channel = supabase
-             .channel('ambient_sounds_changes')
-             .on('postgres_changes', {
-                 event: '*',
-                 schema: 'public',
-                 table: 'ambient_sounds',
-                 filter: 'is_active=eq.true'
-             }, async () => {
-                 // Refresh sounds list
-                 try {
-                     const { data, error } = await supabase
-                         .from('ambient_sounds')
-                         .select('*')
-                         .eq('is_active', true)
-                         .order('created_at', { ascending: false })
+    useEffect(() => {
+        const supabase = createClient()
 
-                     if (error) {
-                         if (isNetworkError(error)) {
-                             setIsOffline(true)
-                         }
-                     } else {
-                         setIsOffline(false)
-                         if (data) {
-                             setSounds(data)
-                         }
-                     }
-                 } catch (err) {
-                     if (isNetworkError(err)) {
-                         setIsOffline(true)
-                     }
-                 }
-             })
-             .subscribe()
+        // Subscribe to real-time updates
+        const channel = supabase
+            .channel('ambient_sounds_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'ambient_sounds',
+                filter: 'is_active=eq.true'
+            }, async () => {
+                // Refresh sounds list
+                try {
+                    const { data, error } = await supabase
+                        .from('ambient_sounds')
+                        .select('*')
+                        .eq('is_active', true)
+                        .order('created_at', { ascending: false })
 
-         // Check network connectivity on mount
-         if (initialSounds.length === 0) {
-             setIsOffline(true)
-         }
+                    if (error) {
+                        if (isNetworkError(error)) {
+                            setIsOffline(true)
+                        }
+                    } else {
+                        setIsOffline(false)
+                        if (data) {
+                            setSounds(data)
+                        }
+                    }
+                } catch (err) {
+                    if (isNetworkError(err)) {
+                        setIsOffline(true)
+                    }
+                }
+            })
+            .subscribe()
 
-         return () => {
-             supabase.removeChannel(channel)
-         }
-     }, [])
+        // Check network connectivity on mount
+        if (initialSounds.length === 0) {
+            setIsOffline(true)
+        }
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [])
 
     // Filter sounds
     useEffect(() => {
@@ -123,24 +125,20 @@ export default function SoundsClient({ user, profile, initialSounds }: SoundsCli
     }, [searchQuery, filterCategory, sounds])
 
     const handlePlaySound = (sound: AmbientSound) => {
-        setSelectedSound(sound)
-    }
+        loadSound(sound)
 
-    const handlePlayCountUpdate = async (soundId: string) => {
+        // Increment play count
         const supabase = createClient()
-        const sound = sounds.find(s => s.id === soundId)
-        if (sound) {
-            // Increment play count
-            await supabase
-                .from('ambient_sounds')
-                .update({ play_count: sound.play_count + 1 })
-                .eq('id', soundId)
-
-            // Update local state
-            setSounds(prev => prev.map(s =>
-                s.id === soundId ? { ...s, play_count: s.play_count + 1 } : s
-            ))
-        }
+        supabase
+            .from('ambient_sounds')
+            .update({ play_count: sound.play_count + 1 })
+            .eq('id', sound.id)
+            .then(() => {
+                // Update local state
+                setSounds(prev => prev.map(s =>
+                    s.id === sound.id ? { ...s, play_count: s.play_count + 1 } : s
+                ))
+            })
     }
 
     const getCategoryIcon = (category: string) => {
@@ -199,31 +197,31 @@ export default function SoundsClient({ user, profile, initialSounds }: SoundsCli
                 </div>
             </header>
 
-             <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
-                 {/* Network Error Banner */}
-                 {isOffline && (
-                     <div className="mb-6 card bg-warning/10 border-warning/30">
-                         <div className="flex items-center gap-3">
-                             <WifiOff size={24} className="text-warning flex-shrink-0" />
-                             <div className="flex-1">
-                                 <h3 className="font-semibold text-on-surface mb-1">Network Connection Issue</h3>
-                                 <p className="text-sm text-on-surface-secondary">
-                                     Unable to load sounds. Please check your internet connection and refresh the page.
-                                 </p>
-                             </div>
-                         </div>
-                     </div>
-                 )}
+            <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
+                {/* Network Error Banner */}
+                {isOffline && (
+                    <div className="mb-6 card bg-warning/10 border-warning/30">
+                        <div className="flex items-center gap-3">
+                            <WifiOff size={24} className="text-warning flex-shrink-0" />
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-on-surface mb-1">Network Connection Issue</h3>
+                                <p className="text-sm text-on-surface-secondary">
+                                    Unable to load sounds. Please check your internet connection and refresh the page.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                 {/* Hero Section */}
-                 <div className="mb-8 text-center">
-                     <h2 className="text-3xl sm:text-4xl font-bold text-on-surface mb-3">
-                         Find Your Focus
-                     </h2>
-                     <p className="text-on-surface-secondary max-w-2xl mx-auto">
-                         Discover carefully curated ambient sounds designed to enhance concentration and reduce distractions
-                     </p>
-                 </div>
+                {/* Hero Section */}
+                <div className="mb-8 text-center">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-on-surface mb-3">
+                        Find Your Focus
+                    </h2>
+                    <p className="text-on-surface-secondary max-w-2xl mx-auto">
+                        Discover carefully curated ambient sounds designed to enhance concentration and reduce distractions
+                    </p>
+                </div>
 
                 {/* Search and Filter */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-8">
@@ -341,7 +339,7 @@ export default function SoundsClient({ user, profile, initialSounds }: SoundsCli
                 {/* Info Card */}
                 <div className="mt-12 card bg-linear-to-br from-primary/5 to-secondary/5 border-primary/20">
                     <div className="flex items-start gap-4">
-                        <div className="flex-0 p-3 rounded-full bg-primary/10">
+                        <div className="shrink-0 p-3 rounded-full bg-primary/10">
                             <Headphones size={24} className="text-primary" />
                         </div>
                         <div className="flex-1">
@@ -370,14 +368,7 @@ export default function SoundsClient({ user, profile, initialSounds }: SoundsCli
             </div>
 
             {/* Music Player Modal */}
-            {selectedSound && (
-                <MusicPlayerModal
-                    sound={selectedSound}
-                    isOpen={!!selectedSound}
-                    onClose={() => setSelectedSound(null)}
-                    onPlayCountUpdate={handlePlayCountUpdate}
-                />
-            )}
+            <MusicPlayerModal />
         </div>
     )
 }

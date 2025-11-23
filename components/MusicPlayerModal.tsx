@@ -1,138 +1,40 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useState } from 'react'
 import { X, Play, Pause, Volume2, VolumeX, Music, Repeat, Maximize2, Minimize2 } from 'lucide-react'
+import { useAudioStore } from '@/stores/audioStore'
 
-interface AmbientSound {
-    id: string
-    title: string
-    description: string | null
-    file_url: string
-    category: string
-    duration: number | null
-    play_count: number
-}
-
-interface MusicPlayerModalProps {
-    sound: AmbientSound
-    isOpen: boolean
-    onClose: () => void
-    onPlayCountUpdate?: (soundId: string) => void
-}
-
-export default function MusicPlayerModal({ sound, isOpen, onClose, onPlayCountUpdate }: MusicPlayerModalProps) {
-    const [isPlaying, setIsPlaying] = useState(false)
-    const [volume, setVolume] = useState(0.7)
-    const [isMuted, setIsMuted] = useState(false)
-    const [isLooping, setIsLooping] = useState(true)
-    const [currentTime, setCurrentTime] = useState(0)
-    const [duration, setDuration] = useState(0)
+export default function MusicPlayerModal() {
     const [isExpanded, setIsExpanded] = useState(false)
-    const audioRef = useRef<HTMLAudioElement | null>(null)
-    const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-    // Initialize audio when modal opens (but don't auto-play)
-    useEffect(() => {
-        if (isOpen) {
-            // Reset state
-            setIsPlaying(false)
-            setCurrentTime(0)
-            setDuration(0)
+    const {
+        currentSound,
+        isPlaying,
+        currentTime,
+        duration,
+        volume,
+        isMuted,
+        isLooping,
+        isModalOpen,
+        togglePlayPause,
+        seek,
+        setVolume: updateVolume,
+        toggleMute,
+        toggleLoop,
+        closeModal
+    } = useAudioStore()
 
-            // Initialize audio (but don't play yet)
-            const audio = new Audio(sound.file_url)
-            audio.volume = isMuted ? 0 : volume
-            audio.loop = isLooping
-            audioRef.current = audio
+    if (!isModalOpen || !currentSound) return null
 
-            // Set up event listeners
-            audio.addEventListener('loadedmetadata', () => {
-                setDuration(audio.duration)
-            })
-
-            audio.addEventListener('ended', () => {
-                if (!isLooping) {
-                    setIsPlaying(false)
-                }
-            })
-
-            // Update progress
-            progressIntervalRef.current = setInterval(() => {
-                if (audio && !audio.paused) {
-                    setCurrentTime(audio.currentTime)
-                }
-            }, 100)
-
-            return () => {
-                if (progressIntervalRef.current) {
-                    clearInterval(progressIntervalRef.current)
-                }
-                if (audio) {
-                    audio.pause()
-                    audio.src = ''
-                }
-            }
-        }
-    }, [isOpen, sound.id])
-
-    // Update volume when it changes (without recreating audio)
-    useEffect(() => {
-        if (audioRef.current) {
-            audioRef.current.volume = isMuted ? 0 : volume
-        }
-    }, [volume, isMuted])
-
-    // Update volume when it changes (without recreating audio)
-    useEffect(() => {
-        if (audioRef.current) {
-            audioRef.current.volume = isMuted ? 0 : volume
-        }
-    }, [volume, isMuted])
-
-    // Update loop when it changes (without recreating audio)
-    useEffect(() => {
-        if (audioRef.current) {
-            audioRef.current.loop = isLooping
-        }
-    }, [isLooping])
-
-    const togglePlayPause = () => {
-        if (audioRef.current) {
-            if (isPlaying) {
-                audioRef.current.pause()
-                setIsPlaying(false)
-            } else {
-                audioRef.current.play()
-                    .then(() => {
-                        setIsPlaying(true)
-                        // Increment play count only on first play
-                        if (onPlayCountUpdate && currentTime === 0) {
-                            onPlayCountUpdate(sound.id)
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Failed to play audio:', err)
-                        setIsPlaying(false)
-                    })
-            }
-        }
-    }
+    const sound = currentSound
 
     const handleVolumeChange = (newVolume: number) => {
-        setVolume(newVolume)
-        if (isMuted) setIsMuted(false)
-    }
-
-    const toggleMute = () => {
-        setIsMuted(!isMuted)
+        updateVolume(newVolume)
     }
 
     const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newTime = parseFloat(e.target.value)
-        setCurrentTime(newTime)
-        if (audioRef.current) {
-            audioRef.current.currentTime = newTime
-        }
+        seek(newTime)
     }
 
     const formatTime = (seconds: number) => {
@@ -157,8 +59,6 @@ export default function MusicPlayerModal({ sound, isOpen, onClose, onPlayCountUp
         return colors[category] || colors.other
     }
 
-    if (!isOpen) return null
-
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
             <div
@@ -180,7 +80,7 @@ export default function MusicPlayerModal({ sound, isOpen, onClose, onPlayCountUp
                                 {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                             </button>
                             <button
-                                onClick={onClose}
+                                onClick={closeModal}
                                 className="p-2 hover:bg-backplate rounded-lg transition-colors"
                                 title="Close"
                             >
@@ -280,11 +180,11 @@ export default function MusicPlayerModal({ sound, isOpen, onClose, onPlayCountUp
                     <button
                         onClick={(e) => {
                             e.stopPropagation()
-                            setIsLooping(!isLooping)
+                            toggleLoop()
                         }}
                         className={`p-3 rounded-full transition-all ${isLooping
-                            ? 'bg-primary/20 text-primary'
-                            : 'hover:bg-backplate text-on-surface-secondary'
+                                ? 'bg-primary/20 text-primary'
+                                : 'hover:bg-backplate text-on-surface-secondary'
                             }`}
                         title={isLooping ? 'Looping enabled' : 'Looping disabled'}
                     >
@@ -332,4 +232,3 @@ export default function MusicPlayerModal({ sound, isOpen, onClose, onPlayCountUp
         </div>
     )
 }
-

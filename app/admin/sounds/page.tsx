@@ -229,7 +229,7 @@ export default function AdminSoundsPage() {
             }
 
             // Save metadata to database
-            const { error: dbError } = await supabase
+            const { data: newSound, error: dbError } = await supabase
                 .from('ambient_sounds')
                 .insert({
                     title: formData.title,
@@ -242,8 +242,23 @@ export default function AdminSoundsPage() {
                     is_active: formData.is_active,
                     created_by: currentUser?.id
                 })
+                .select()
+                .single()
 
             if (dbError) throw dbError
+
+            // Log admin activity
+            if (newSound) {
+                await supabase
+                    .from('admin_audit_log')
+                    .insert({
+                        admin_id: currentUser?.id,
+                        action: 'created',
+                        target_table: 'ambient_sounds',
+                        target_id: newSound.id,
+                        details: `Uploaded sound: ${formData.title} (${formData.category})`
+                    })
+            }
 
             setToast({ message: 'Sound uploaded successfully!', variant: 'success' })
             setIsCreateOpen(false)
@@ -297,6 +312,17 @@ export default function AdminSoundsPage() {
 
             if (dbError) throw dbError
 
+            // Log admin activity
+            await supabase
+                .from('admin_audit_log')
+                .insert({
+                    admin_id: currentUser?.id,
+                    action: 'deleted',
+                    target_table: 'ambient_sounds',
+                    target_id: deletingSound.id,
+                    details: `Deleted sound: ${deletingSound.title}`
+                })
+
             setToast({ message: 'Sound deleted successfully', variant: 'success' })
             setDeletingSound(null)
 
@@ -342,14 +368,27 @@ export default function AdminSoundsPage() {
     const toggleActive = async (sound: AmbientSound) => {
         try {
             const supabase = createClient()
+            const newStatus = !sound.is_active
+
             const { error } = await supabase
                 .from('ambient_sounds')
-                .update({ is_active: !sound.is_active })
+                .update({ is_active: newStatus })
                 .eq('id', sound.id)
 
             if (error) throw error
 
-            setToast({ message: `Sound ${!sound.is_active ? 'activated' : 'deactivated'}`, variant: 'success' })
+            // Log admin activity
+            await supabase
+                .from('admin_audit_log')
+                .insert({
+                    admin_id: currentUser?.id,
+                    action: 'updated',
+                    target_table: 'ambient_sounds',
+                    target_id: sound.id,
+                    details: `${newStatus ? 'Activated' : 'Deactivated'} sound: ${sound.title}`
+                })
+
+            setToast({ message: `Sound ${newStatus ? 'activated' : 'deactivated'}`, variant: 'success' })
         } catch (error: any) {
             console.error('Error updating sound:', error)
             setToast({ message: 'Failed to update sound status', variant: 'error' })
