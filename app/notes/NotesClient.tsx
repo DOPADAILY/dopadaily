@@ -383,8 +383,8 @@ export default function NotesClient() {
   return (
     <>
       {/* Filters & Search */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
-        <div className="flex-1 flex items-center gap-2 px-3 h-10 bg-surface-elevated border border-border rounded-lg focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+        <div className="w-full sm:flex-1 flex items-center gap-2 px-3 h-10 bg-surface-elevated border border-border rounded-lg focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
           <Search size={18} className="text-on-surface-secondary shrink-0" />
           <input
             type="text"
@@ -394,12 +394,12 @@ export default function NotesClient() {
             className="flex-1 bg-transparent text-sm text-on-surface outline-none placeholder:text-neutral-medium"
           />
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 w-full sm:w-auto">
           <Select
             value={filterCategory}
             onChange={(value) => setFilterCategory(value)}
             options={categoryOptions}
-            className="w-40"
+            className="flex-1 sm:flex-none sm:w-40"
           />
           <button
             onClick={() => setIsCreateOpen(true)}

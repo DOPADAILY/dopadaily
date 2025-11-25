@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/utils/supabase/client'
+import { isSessionError } from '@/utils/errorHandling'
 
 export interface Profile {
   id: string
@@ -28,7 +29,12 @@ export const profileKeys = {
 // Fetch current user profile
 async function fetchCurrentProfile(): Promise<Profile | null> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  // If there's a session error, throw it to trigger global error handler
+  if (userError && isSessionError(userError)) {
+    throw userError
+  }
   
   if (!user) return null
   
@@ -38,7 +44,16 @@ async function fetchCurrentProfile(): Promise<Profile | null> {
     .eq('id', user.id)
     .single()
   
-  if (error) throw error
+  // If there's a session error (like 406), throw it to trigger global error handler
+  if (error) {
+    // Attach status code if it's a 406 error
+    if (error.code === 'PGRST301' || error.message?.includes('406')) {
+      const sessionError = new Error(error.message) as any
+      sessionError.status = 406
+      throw sessionError
+    }
+    throw error
+  }
   return data
 }
 

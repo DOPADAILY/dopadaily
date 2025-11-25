@@ -197,14 +197,24 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
                                 {milestoneProgress.sessionsToGo > 0 && ` (${milestoneProgress.sessionsToGo} to go!)`}
                             </p>
                         </div>
-                    ) : (
+                    ) : milestoneProgress.totalMilestones > 0 ? (
                         <div className="card bg-linear-to-br from-primary to-secondary border-primary">
                             <div className="flex items-center gap-2 mb-4">
                                 <span className="text-2xl">👑</span>
                                 <h3 className="font-semibold">All Milestones Complete!</h3>
                             </div>
                             <p className="text-sm text-neutral-medium font-medium">
-                                Amazing! You've unlocked all available achievements. Keep up the great work!
+                                Amazing! You've unlocked all {milestoneProgress.totalMilestones} achievements. Keep up the great work!
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="card">
+                            <div className="flex items-center gap-2 mb-4">
+                                <span className="text-2xl">🎯</span>
+                                <h3 className="font-semibold text-on-surface">Milestones</h3>
+                            </div>
+                            <p className="text-sm text-on-surface-secondary">
+                                No milestones available yet. Keep completing focus sessions — achievements are coming soon!
                             </p>
                         </div>
                     )}

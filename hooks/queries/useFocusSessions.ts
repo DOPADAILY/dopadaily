@@ -27,6 +27,8 @@ export interface MilestoneProgress {
   progressPercentage: number
   totalSessions: number
   sessionsToGo: number
+  totalMilestones: number
+  unlockedMilestones: number
 }
 
 export interface UserAchievementWithMilestone {
@@ -159,6 +161,9 @@ async function fetchMilestoneProgress(
     .eq('is_active', true)
     .order('session_threshold', { ascending: true })
 
+  const totalMilestones = milestones?.length || 0
+  const unlockedMilestones = unlockedIds.size
+
   // Find first milestone not yet unlocked
   const nextMilestone = milestones?.find(m => !unlockedIds.has(m.id)) || null
 
@@ -166,9 +171,11 @@ async function fetchMilestoneProgress(
     return {
       milestone: null,
       progress: 0,
-      progressPercentage: 100,
+      progressPercentage: totalMilestones > 0 ? 100 : 0,
       totalSessions: sessionCount,
       sessionsToGo: 0,
+      totalMilestones,
+      unlockedMilestones,
     }
   }
 
@@ -189,6 +196,8 @@ async function fetchMilestoneProgress(
     progressPercentage,
     totalSessions: sessionCount,
     sessionsToGo,
+    totalMilestones,
+    unlockedMilestones,
   }
 }
 

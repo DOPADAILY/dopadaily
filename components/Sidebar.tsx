@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck, Award, Headphones, FileText } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
+import { isSessionError, handleSessionError } from '@/utils/errorHandling'
 
 interface SidebarProps {
   onNavigate?: () => void
@@ -18,13 +19,26 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
   useEffect(() => {
     const checkAdmin = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+      // Handle session errors - clear session and redirect to login
+      if (userError && isSessionError(userError)) {
+        await handleSessionError(supabase)
+        return
+      }
+
       if (user) {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single()
+
+        // Handle 406 or other session errors from profile fetch
+        if (profileError && isSessionError(profileError)) {
+          await handleSessionError(supabase)
+          return
+        }
 
         setIsAdmin(profile?.role === 'admin')
       }

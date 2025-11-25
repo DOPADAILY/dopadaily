@@ -93,7 +93,7 @@ export default function AchievementsClient() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : totalCount > 0 ? (
           <div className="card">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
@@ -102,6 +102,18 @@ export default function AchievementsClient() {
               <div>
                 <p className="text-sm font-semibold text-on-surface">All Unlocked!</p>
                 <p className="text-xs text-on-surface-secondary">You're amazing! 🎉</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="card">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-neutral-light/20 flex items-center justify-center">
+                <Award size={20} className="text-on-surface-secondary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-on-surface">Coming Soon</p>
+                <p className="text-xs text-on-surface-secondary">Achievements are on the way!</p>
               </div>
             </div>
           </div>

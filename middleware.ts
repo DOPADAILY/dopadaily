@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { isNetworkError } from '@/utils/errorHandling'
+import { isNetworkError, isSessionError } from '@/utils/errorHandling'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -71,6 +71,13 @@ export async function middleware(request: NextRequest) {
       return response
     }
 
+    // If there's a session error (406, expired token, etc.), clear session and redirect to login
+    if (sessionError && isSessionError(sessionError)) {
+      console.warn('[Middleware] Session error, clearing session and redirecting to login')
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
     // Clear the network issue flag if everything is working
     if (session && response.cookies.get('network-issue')) {
       response.cookies.delete('network-issue')
@@ -92,6 +99,13 @@ export async function middleware(request: NextRequest) {
       if (profileError && isNetworkError(profileError)) {
         console.warn('[Middleware] Network error fetching profile, allowing request to continue')
         return response
+      }
+
+      // If there's a session error fetching profile, clear session and redirect
+      if (profileError && isSessionError(profileError)) {
+        console.warn('[Middleware] Session error fetching profile, clearing session and redirecting to login')
+        await supabase.auth.signOut()
+        return NextResponse.redirect(new URL('/login', request.url))
       }
 
       if (profile?.is_banned) {
