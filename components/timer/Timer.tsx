@@ -6,6 +6,7 @@ import { saveFocusSession } from '@/app/focus/actions'
 import { Play, Pause, RotateCcw, Coffee, Brain } from 'lucide-react'
 import Toast from '@/components/Toast'
 import AchievementModal from '@/components/AchievementModal'
+import QuickNote from '@/components/QuickNote'
 
 export default function Timer() {
   const {
@@ -172,6 +173,9 @@ export default function Timer() {
           {Math.floor(duration / 60)} minutes
         </p>
       </div>
+
+      {/* Quick Note */}
+      <QuickNote />
 
       {/* Toast Notification */}
       <Toast
