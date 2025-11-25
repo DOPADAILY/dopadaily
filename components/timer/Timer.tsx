@@ -7,9 +7,12 @@ import { Play, Pause, RotateCcw, Coffee, Brain } from 'lucide-react'
 import Toast from '@/components/Toast'
 import AchievementModal from '@/components/AchievementModal'
 import QuickNote from '@/components/QuickNote'
+import { useQueryClient } from '@tanstack/react-query'
+import { focusKeys } from '@/hooks/queries'
 import { useTimerSound } from '@/hooks/useTimerSound'
 
 export default function Timer() {
+  const queryClient = useQueryClient()
   const {
     timeLeft,
     duration,
@@ -52,6 +55,9 @@ export default function Timer() {
         } else {
           setToast({ message: '✓ Break completed!', type: 'success' })
         }
+        // Invalidate queries so stats and achievements refresh
+        queryClient.invalidateQueries({ queryKey: focusKeys.dashboardStats() })
+        queryClient.invalidateQueries({ queryKey: focusKeys.focusPageStats() })
       })
     })
   }, [setOnComplete, playCompletionSound])

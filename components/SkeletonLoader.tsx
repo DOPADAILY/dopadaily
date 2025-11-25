@@ -97,7 +97,7 @@ export function NotesSkeleton() {
   return (
     <div className="min-h-screen bg-background">
       {/* <PageHeaderSkeleton /> */}
-      <div className=" lg:py-12">
+      <div className="">
         {/* Search and filters */}
         <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
           <SkeletonPulse className="flex-1 h-10 rounded-lg w-full sm:w-auto" />
@@ -174,7 +174,7 @@ export function SoundsSkeleton() {
   return (
     <div className="min-h-screen bg-background">
       {/* <PageHeaderSkeleton /> */}
-      <div className=" lg:py-12">
+      <div className="">
         {/* Filter */}
         <div className="flex justify-between items-center mb-6">
           <SkeletonPulse className="h-5 w-32" />
@@ -206,7 +206,7 @@ export function AchievementsSkeleton() {
   return (
     <div className="min-h-screen bg-background">
       {/* <PageHeaderSkeleton /> */}
-      <div className=" lg:py-12">
+      <div className="">
         {/* Progress header */}
         <div className="card mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -307,7 +307,7 @@ export function RemindersSkeleton() {
   return (
     <div className="min-h-screen bg-background">
       {/* <PageHeaderSkeleton /> */}
-      <div className=" lg:py-12">
+      <div className="">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
           {/* Reminders list */}
           <div className="xl:col-span-2 space-y-6">
@@ -379,7 +379,7 @@ export function SettingsSkeleton() {
   return (
     <div className="min-h-screen bg-background">
       {/* <PageHeaderSkeleton /> */}
-      <div className=" lg:py-12 max-w-4xl">
+      <div className="max-w-4xl">
         {/* Profile section */}
         <div className="card mb-6">
           <SkeletonPulse className="h-6 w-24 mb-6" />
