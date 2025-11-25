@@ -688,6 +688,12 @@ CREATE OR REPLACE TRIGGER "update_forum_comments_updated_at_trigger" BEFORE UPDA
 
 
 
+-- Trigger to automatically create a profile when a new user signs up
+-- This trigger fires on auth.users table (managed by Supabase Auth)
+CREATE OR REPLACE TRIGGER "on_auth_user_created" AFTER INSERT ON "auth"."users" FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_user"();
+
+
+
 ALTER TABLE ONLY "public"."admin_audit_log"
     ADD CONSTRAINT "admin_audit_log_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "public"."profiles"("id");
 
