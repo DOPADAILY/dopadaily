@@ -1,65 +1,86 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { Bell, Trash2, Calendar, Plus, Clock, X, Edit2 } from 'lucide-react'
-import { createReminder, deleteReminder, updateReminder } from './actions'
+import { useState } from 'react'
+import { Bell, Trash2, Calendar, Plus, Clock, X, Edit2, Loader2 } from 'lucide-react'
+import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder, Reminder } from '@/hooks/queries'
 import EmptyState from '@/components/EmptyState'
 import Toast from '@/components/Toast'
 import ConfirmModal from '@/components/ConfirmModal'
-
-interface Reminder {
-  id: number
-  title: string
-  message: string | null
-  remind_at: string
-  is_global: boolean
-  created_by: string
-}
+import { RemindersSkeleton } from '@/components/SkeletonLoader'
 
 interface RemindersClientProps {
-  upcomingReminders: Reminder[]
-  pastReminders: Reminder[]
   userId: string
   isAdmin: boolean
 }
 
 export default function RemindersClient({ 
-  upcomingReminders, 
-  pastReminders, 
   userId,
   isAdmin
 }: RemindersClientProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
   const [deletingReminder, setDeletingReminder] = useState<Reminder | null>(null)
-  const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
+  // TanStack Query hooks
+  const { data, isLoading, error } = useReminders()
+  const createReminder = useCreateReminder()
+  const updateReminder = useUpdateReminder()
+  const deleteReminderMutation = useDeleteReminder()
+
+  const upcomingReminders = data?.upcoming || []
+  const pastReminders = data?.past || []
+
   const handleCreateReminder = async (formData: FormData) => {
-    startTransition(async () => {
-      await createReminder(formData)
-      setIsCreateOpen(false)
-      setToast({ message: 'Reminder created successfully!', type: 'success' })
-    })
+    const title = formData.get('title') as string
+    const message = formData.get('message') as string
+    const isGlobal = formData.get('isGlobal') === 'on'
+    const date = formData.get('date') as string
+
+    createReminder.mutate(
+      { title, message, remind_at: date, is_global: isGlobal },
+      {
+        onSuccess: () => {
+          setIsCreateOpen(false)
+          setToast({ message: 'Reminder created successfully!', type: 'success' })
+        },
+        onError: (err) => {
+          setToast({ message: err.message || 'Failed to create reminder', type: 'error' })
+        },
+      }
+    )
   }
 
   const handleUpdateReminder = async (formData: FormData) => {
-    startTransition(async () => {
-      const result = await updateReminder(formData)
-      if (result?.error) {
-        setToast({ message: result.error, type: 'error' })
-      } else {
-        setEditingReminder(null)
-        setToast({ message: 'Reminder updated successfully!', type: 'success' })
+    const id = parseInt(formData.get('id') as string)
+    const title = formData.get('title') as string
+    const message = formData.get('message') as string
+    const isGlobal = formData.get('isGlobal') === 'on'
+    const date = formData.get('date') as string
+
+    updateReminder.mutate(
+      { id, title, message, remind_at: date, is_global: isGlobal },
+      {
+        onSuccess: () => {
+          setEditingReminder(null)
+          setToast({ message: 'Reminder updated successfully!', type: 'success' })
+        },
+        onError: (err) => {
+          setToast({ message: err.message || 'Failed to update reminder', type: 'error' })
+        },
       }
-    })
+    )
   }
 
   const handleDeleteReminder = async (id: number) => {
-    startTransition(async () => {
-      await deleteReminder(id)
-      setDeletingReminder(null)
-      setToast({ message: 'Reminder deleted', type: 'success' })
+    deleteReminderMutation.mutate(id, {
+      onSuccess: () => {
+        setDeletingReminder(null)
+        setToast({ message: 'Reminder deleted', type: 'success' })
+      },
+      onError: (err) => {
+        setToast({ message: err.message || 'Failed to delete reminder', type: 'error' })
+      },
     })
   }
 
@@ -90,6 +111,26 @@ export default function RemindersClient({
       default: return 'text-on-surface-secondary bg-surface-elevated border-border'
     }
   }
+
+  // Only show skeleton on initial load when there's no cached data
+  if (isLoading && !data) {
+    return <RemindersSkeleton />
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="card">
+        <EmptyState
+          icon={Bell}
+          title="Failed to load reminders"
+          description={error.message || 'Something went wrong. Please try again.'}
+        />
+      </div>
+    )
+  }
+
+  const isPending = createReminder.isPending || updateReminder.isPending || deleteReminderMutation.isPending
 
   return (
     <>
@@ -171,6 +212,7 @@ export default function RemindersClient({
                           onClick={() => setEditingReminder(reminder)}
                           className="text-on-surface-secondary hover:text-primary transition-colors p-2 rounded-lg hover:bg-primary/10"
                           aria-label="Edit reminder"
+                          disabled={isPending}
                         >
                           <Edit2 size={16} />
                         </button>
@@ -178,6 +220,7 @@ export default function RemindersClient({
                           onClick={() => setDeletingReminder(reminder)}
                           className="text-on-surface-secondary hover:text-error transition-colors p-2 rounded-lg hover:bg-error/10"
                           aria-label="Delete reminder"
+                          disabled={isPending}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -224,6 +267,7 @@ export default function RemindersClient({
                       onClick={() => setDeletingReminder(reminder)}
                       className="text-on-surface-secondary hover:text-error opacity-0 group-hover:opacity-100 transition-all p-2 rounded-lg hover:bg-error/10 shrink-0"
                       aria-label="Delete reminder"
+                      disabled={isPending}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -313,14 +357,11 @@ export default function RemindersClient({
               <button
                 type="submit"
                 className="btn btn-primary w-full"
-                disabled={isPending}
+                disabled={updateReminder.isPending}
               >
-                {isPending ? (
+                {updateReminder.isPending ? (
                   <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 size={18} className="animate-spin" />
                     Updating...
                   </>
                 ) : (
@@ -407,14 +448,11 @@ export default function RemindersClient({
               <button
                 type="submit"
                 className="btn btn-primary w-full"
-                disabled={isPending}
+                disabled={createReminder.isPending}
               >
-                {isPending ? (
+                {createReminder.isPending ? (
                   <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 size={18} className="animate-spin" />
                     Creating...
                   </>
                 ) : (
@@ -439,7 +477,7 @@ export default function RemindersClient({
         variant="danger"
         onConfirm={() => deletingReminder && handleDeleteReminder(deletingReminder.id)}
         onClose={() => setDeletingReminder(null)}
-        isLoading={isPending}
+        isLoading={deleteReminderMutation.isPending}
       />
 
       {/* Toast */}
@@ -452,4 +490,3 @@ export default function RemindersClient({
     </>
   )
 }
-

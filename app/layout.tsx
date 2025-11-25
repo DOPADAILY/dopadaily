@@ -5,6 +5,7 @@ import ConditionalSidebar from "@/components/ConditionalSidebar";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { MobileSidebarProvider } from "@/components/MobileSidebar";
 import MiniPlayer from "@/components/MiniPlayer";
+import { QueryProvider } from "@/providers/QueryProvider";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -31,13 +32,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${montserrat.variable} ${dmSans.variable}`}>
       <body className="antialiased bg-surface text-on-surface">
-        <MobileSidebarProvider>
-          <ConditionalSidebar />
-          <ConditionalLayout>
-        {children}
-          </ConditionalLayout>
-          <MiniPlayer />
-        </MobileSidebarProvider>
+        <QueryProvider>
+          <MobileSidebarProvider>
+            <ConditionalSidebar />
+            <ConditionalLayout>
+              {children}
+            </ConditionalLayout>
+            <MiniPlayer />
+          </MobileSidebarProvider>
+        </QueryProvider>
       </body>
     </html>
   );

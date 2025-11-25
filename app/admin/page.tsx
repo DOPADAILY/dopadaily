@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
-import { Users, Award, Bell, MessageSquare, TrendingUp, Settings, FileText, ShieldCheck, UserPlus, Ban, Activity, Music } from 'lucide-react'
-import StatCard from '@/components/StatCard'
+import { Users, Award, Bell, TrendingUp, FileText, ShieldCheck, Music } from 'lucide-react'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import ActivityLog from './ActivityLog'
@@ -224,7 +223,7 @@ export default async function AdminDashboard() {
           </div>
 
           <div className="space-y-6">
-            <div className="card bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/30">
+            <div className="card bg-linear-to-br from-primary/10 to-secondary/10 border-primary/30">
               <div className="flex items-center gap-2 mb-3">
                 <ShieldCheck size={20} className="text-primary" />
                 <h3 className="font-semibold text-on-surface">Today's Activity</h3>

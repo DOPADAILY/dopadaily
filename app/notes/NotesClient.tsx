@@ -1,19 +1,17 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import {
   FileText, Trash2, Plus, X, Edit2, Pin, PinOff, Search,
-  Lightbulb, Target, Brain, Sparkles, BookOpen
+  Lightbulb, Target, Brain, Sparkles, BookOpen, Loader2
 } from 'lucide-react'
-import { createNote, updateNote, deleteNote, togglePinNote, Note, NoteCategory, NoteColor } from './actions'
+import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useTogglePin } from '@/hooks/queries'
+import { Note, NoteCategory, NoteColor } from './actions'
 import EmptyState from '@/components/EmptyState'
 import Toast from '@/components/Toast'
 import ConfirmModal from '@/components/ConfirmModal'
 import Select from '@/components/Select'
-
-interface NotesClientProps {
-  notes: Note[]
-}
+import { NotesSkeleton } from '@/components/SkeletonLoader'
 
 const categoryOptions = [
   { value: 'all', label: 'All Notes' },
@@ -45,15 +43,21 @@ const getColorClass = (color: NoteColor) => {
   return colorOptions.find(c => c.value === color)?.class || colorOptions[0].class
 }
 
-export default function NotesClient({ notes }: NotesClientProps) {
+export default function NotesClient() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
   const [deletingNote, setDeletingNote] = useState<Note | null>(null)
   const [viewingNote, setViewingNote] = useState<Note | null>(null)
-  const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [filterCategory, setFilterCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // TanStack Query hooks
+  const { data: notes = [], isLoading, error } = useNotes()
+  const createNote = useCreateNote()
+  const updateNote = useUpdateNote()
+  const deleteNoteMutation = useDeleteNote()
+  const togglePin = useTogglePin()
 
   // Filter and sort notes
   const filteredNotes = notes
@@ -76,53 +80,83 @@ export default function NotesClient({ notes }: NotesClientProps) {
   const unpinnedNotes = filteredNotes.filter(n => !n.is_pinned)
 
   const handleCreateNote = async (formData: FormData) => {
-    startTransition(async () => {
-      const result = await createNote(formData)
-      if (result.error) {
-        setToast({ message: result.error, type: 'error' })
-      } else {
-        setIsCreateOpen(false)
-        setToast({ message: 'Note created!', type: 'success' })
+    const title = formData.get('title') as string | null
+    const content = formData.get('content') as string
+    const category = (formData.get('category') as NoteCategory) || 'general'
+    const color = (formData.get('color') as NoteColor) || 'default'
+
+    if (!content?.trim()) {
+      setToast({ message: 'Note content is required', type: 'error' })
+      return
+    }
+
+    createNote.mutate(
+      { title, content, category, color },
+      {
+        onSuccess: () => {
+          setIsCreateOpen(false)
+          setToast({ message: 'Note created!', type: 'success' })
+        },
+        onError: (err) => {
+          setToast({ message: err.message || 'Failed to create note', type: 'error' })
+        },
       }
-    })
+    )
   }
 
   const handleUpdateNote = async (formData: FormData) => {
-    startTransition(async () => {
-      const result = await updateNote(formData)
-      if (result.error) {
-        setToast({ message: result.error, type: 'error' })
-      } else {
-        setEditingNote(null)
-        setToast({ message: 'Note updated!', type: 'success' })
+    const id = formData.get('id') as string
+    const title = formData.get('title') as string | null
+    const content = formData.get('content') as string
+    const category = (formData.get('category') as NoteCategory) || 'general'
+    const color = (formData.get('color') as NoteColor) || 'default'
+
+    if (!content?.trim()) {
+      setToast({ message: 'Note content is required', type: 'error' })
+      return
+    }
+
+    updateNote.mutate(
+      { id, title, content, category, color },
+      {
+        onSuccess: () => {
+          setEditingNote(null)
+          setToast({ message: 'Note updated!', type: 'success' })
+        },
+        onError: (err) => {
+          setToast({ message: err.message || 'Failed to update note', type: 'error' })
+        },
       }
-    })
+    )
   }
 
   const handleDeleteNote = async (id: string) => {
-    startTransition(async () => {
-      const result = await deleteNote(id)
-      if (result.error) {
-        setToast({ message: result.error, type: 'error' })
-      } else {
+    deleteNoteMutation.mutate(id, {
+      onSuccess: () => {
         setDeletingNote(null)
         setToast({ message: 'Note deleted', type: 'success' })
-      }
+      },
+      onError: (err) => {
+        setToast({ message: err.message || 'Failed to delete note', type: 'error' })
+      },
     })
   }
 
   const handleTogglePin = async (note: Note) => {
-    startTransition(async () => {
-      const result = await togglePinNote(note.id, note.is_pinned)
-      if (result.error) {
-        setToast({ message: result.error, type: 'error' })
-      } else {
-        setToast({
-          message: note.is_pinned ? 'Note unpinned' : 'Note pinned!',
-          type: 'success'
-        })
+    togglePin.mutate(
+      { id: note.id, isPinned: note.is_pinned },
+      {
+        onSuccess: () => {
+          setToast({
+            message: note.is_pinned ? 'Note unpinned' : 'Note pinned!',
+            type: 'success'
+          })
+        },
+        onError: (err) => {
+          setToast({ message: err.message || 'Failed to update note', type: 'error' })
+        },
       }
-    })
+    )
   }
 
   const formatDate = (dateStr: string) => {
@@ -140,9 +174,30 @@ export default function NotesClient({ notes }: NotesClientProps) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
+  // Only show skeleton on initial load when there's no cached data
+  // isLoading = isPending && no cached data (first load only)
+  if (isLoading && notes.length === 0) {
+    return <NotesSkeleton />
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="card">
+        <EmptyState
+          icon={FileText}
+          title="Failed to load notes"
+          description={error.message || 'Something went wrong. Please try again.'}
+        />
+      </div>
+    )
+  }
+
+  const isPending = createNote.isPending || updateNote.isPending || deleteNoteMutation.isPending || togglePin.isPending
+
   const NoteCard = ({ note }: { note: Note }) => (
     <div
-      className={`group relative rounded-xl border-2 p-4 transition-all hover:shadow-md cursor-pointer ${getColorClass(note.color)}`}
+      className={`group relative rounded-xl border-2 p-4 transition-all hover:shadow-md cursor-pointer ${getColorClass(note.color)} ${note.id.toString().startsWith('temp-') ? 'opacity-70' : ''}`}
       onClick={() => setViewingNote(note)}
     >
       {/* Pin indicator */}
@@ -190,6 +245,7 @@ export default function NotesClient({ notes }: NotesClientProps) {
             onClick={() => handleTogglePin(note)}
             className="p-1.5 rounded-lg hover:bg-backplate text-on-surface-secondary hover:text-primary transition-colors"
             title={note.is_pinned ? 'Unpin' : 'Pin'}
+            disabled={isPending}
           >
             {note.is_pinned ? <PinOff size={14} /> : <Pin size={14} />}
           </button>
@@ -197,6 +253,7 @@ export default function NotesClient({ notes }: NotesClientProps) {
             onClick={() => setEditingNote(note)}
             className="p-1.5 rounded-lg hover:bg-backplate text-on-surface-secondary hover:text-primary transition-colors"
             title="Edit"
+            disabled={isPending}
           >
             <Edit2 size={14} />
           </button>
@@ -204,6 +261,7 @@ export default function NotesClient({ notes }: NotesClientProps) {
             onClick={() => setDeletingNote(note)}
             className="p-1.5 rounded-lg hover:bg-error/10 text-on-surface-secondary hover:text-error transition-colors"
             title="Delete"
+            disabled={isPending}
           >
             <Trash2 size={14} />
           </button>
@@ -216,12 +274,14 @@ export default function NotesClient({ notes }: NotesClientProps) {
     note,
     onSubmit,
     onCancel,
-    title
+    title,
+    isSubmitting
   }: {
     note?: Note | null
     onSubmit: (formData: FormData) => void
     onCancel: () => void
     title: string
+    isSubmitting: boolean
   }) => (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
       <div className="relative bg-surface-elevated rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up">
@@ -301,14 +361,11 @@ export default function NotesClient({ notes }: NotesClientProps) {
           <button
             type="submit"
             className="btn btn-primary w-full"
-            disabled={isPending}
+            disabled={isSubmitting}
           >
-            {isPending ? (
+            {isSubmitting ? (
               <>
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <Loader2 size={18} className="animate-spin" />
                 Saving...
               </>
             ) : (
@@ -495,6 +552,7 @@ export default function NotesClient({ notes }: NotesClientProps) {
           onSubmit={handleCreateNote}
           onCancel={() => setIsCreateOpen(false)}
           title="Create Note"
+          isSubmitting={createNote.isPending}
         />
       )}
 
@@ -505,6 +563,7 @@ export default function NotesClient({ notes }: NotesClientProps) {
           onSubmit={handleUpdateNote}
           onCancel={() => setEditingNote(null)}
           title="Edit Note"
+          isSubmitting={updateNote.isPending}
         />
       )}
 
@@ -518,7 +577,7 @@ export default function NotesClient({ notes }: NotesClientProps) {
         variant="danger"
         onConfirm={() => deletingNote && handleDeleteNote(deletingNote.id)}
         onClose={() => setDeletingNote(null)}
-        isLoading={isPending}
+        isLoading={deleteNoteMutation.isPending}
       />
 
       {/* Toast */}
@@ -531,4 +590,3 @@ export default function NotesClient({ notes }: NotesClientProps) {
     </>
   )
 }
-

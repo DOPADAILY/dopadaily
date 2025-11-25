@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { FileText } from 'lucide-react'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import NotesClient from './NotesClient'
@@ -13,19 +12,12 @@ export default async function NotesPage() {
     redirect('/login')
   }
 
-  // Get user profile
+  // Only fetch profile for header - notes are fetched client-side with TanStack Query
   const { data: profile } = await supabase
     .from('profiles')
     .select('username')
     .eq('id', user.id)
     .single()
-
-  // Get user's notes
-  const { data: notes } = await supabase
-    .from('notes')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,10 +35,9 @@ export default async function NotesPage() {
         </div>
       </header>
 
-      <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12 max-w-7xl">
-        <NotesClient notes={notes || []} />
+      <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
+        <NotesClient />
       </div>
     </div>
   )
 }
-

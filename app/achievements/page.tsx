@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { Award, Lock, Check, TrendingUp } from 'lucide-react'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
+import AchievementsClient from './AchievementsClient'
 
 export default async function AchievementsPage() {
   const supabase = await createClient()
@@ -12,38 +12,12 @@ export default async function AchievementsPage() {
     redirect('/login')
   }
 
-  // Get user profile
+  // Only fetch profile for header - achievements are fetched client-side with TanStack Query
   const { data: profile } = await supabase
     .from('profiles')
     .select('username')
     .eq('id', user.id)
     .single()
-
-  // Get total sessions count
-  const { count: totalSessions } = await supabase
-    .from('focus_sessions')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-
-  // Get all milestones
-  const { data: milestones } = await supabase
-    .from('milestones')
-    .select('*')
-    .eq('is_active', true)
-    .order('session_threshold', { ascending: true })
-
-  // Get user's unlocked achievements
-  const { data: unlockedAchievements } = await supabase
-    .from('user_achievements')
-    .select('milestone_id, unlocked_at')
-    .eq('user_id', user.id)
-
-  const unlockedMilestoneIds = new Set(unlockedAchievements?.map(a => a.milestone_id))
-  const unlockedCount = unlockedAchievements?.length || 0
-  const totalCount = milestones?.length || 0
-
-  // Find next milestone to unlock
-  const nextMilestone = milestones?.find(m => m.session_threshold > (totalSessions || 0))
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,161 +34,8 @@ export default async function AchievementsPage() {
       </header>
 
       <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
-        
-        {/* Progress Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
-          
-          {/* Total Sessions */}
-          <div className="card">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                <TrendingUp size={20} className="text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-on-surface">{totalSessions || 0}</p>
-                <p className="text-xs text-on-surface-secondary">Total Sessions</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Achievements Progress */}
-          <div className="card">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                <Award size={20} className="text-success" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-on-surface">{unlockedCount} / {totalCount}</p>
-                <p className="text-xs text-on-surface-secondary">Achievements Unlocked</p>
-              </div>
-            </div>
-            <div className="mt-3">
-              <div className="h-2 bg-neutral-light/20 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-success transition-all duration-500"
-                  style={{ width: `${totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Next Milestone */}
-          {nextMilestone ? (
-            <div className="card">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center">
-                  <Lock size={20} className="text-warning" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-on-surface truncate">Next: {nextMilestone.title}</p>
-                  <p className="text-xs text-on-surface-secondary">
-                    {nextMilestone.session_threshold - (totalSessions || 0)} sessions away
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="card">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Check size={20} className="text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">All Unlocked!</p>
-                  <p className="text-xs text-on-surface-secondary">You're amazing! 🎉</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Achievements Grid */}
-        <h2 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-2">
-          <Award size={24} className="text-primary" />
-          All Achievements
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {milestones?.map((milestone) => {
-            const isUnlocked = unlockedMilestoneIds.has(milestone.id)
-            const achievement = unlockedAchievements?.find(a => a.milestone_id === milestone.id)
-            const progress = Math.min(100, ((totalSessions || 0) / milestone.session_threshold) * 100)
-            const isInProgress = !isUnlocked && progress > 0
-
-            return (
-              <div
-                key={milestone.id}
-                className={`card transition-all duration-300 ${
-                  isUnlocked ? 'border-2 border-success' : isInProgress ? 'border-2 border-warning/30' : 'opacity-60'
-                }`}
-              >
-                {/* Badge */}
-                <div className="flex items-start gap-4 mb-4">
-                  <div 
-                    className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl shrink-0 transition-all duration-300 ${
-                      isUnlocked ? 'shadow-lg' : 'grayscale opacity-50'
-                    }`}
-                    style={{ 
-                      backgroundColor: isUnlocked ? milestone.badge_color + '20' : '#e9ddcf',
-                      border: isUnlocked ? `3px solid ${milestone.badge_color}` : '2px solid #d4c9be'
-                    }}
-                  >
-                    {isUnlocked ? milestone.badge_icon : '🔒'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-on-surface mb-1 flex items-center gap-2">
-                      {milestone.title}
-                      {isUnlocked && <Check size={16} className="text-success" />}
-                    </h3>
-                    <p className="text-xs text-on-surface-secondary line-clamp-2">
-                      {milestone.description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Progress/Status */}
-                {isUnlocked ? (
-                  <div className="bg-success/10 border border-success/30 rounded-lg px-3 py-2">
-                    <p className="text-xs text-success font-semibold">
-                      ✓ Unlocked {achievement ? new Date(achievement.unlocked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs text-on-surface-secondary font-medium">
-                        {totalSessions || 0} / {milestone.session_threshold} sessions
-                      </p>
-                      <p className="text-xs text-on-surface-secondary font-semibold">
-                        {Math.round(progress)}%
-                      </p>
-                    </div>
-                    <div className="h-2 bg-neutral-light/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-warning transition-all duration-500"
-                        style={{ width: `${progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Empty State */}
-        {(!milestones || milestones.length === 0) && (
-          <div className="card text-center py-12">
-            <Award size={48} className="mx-auto text-neutral-medium mb-4 opacity-50" />
-            <h3 className="font-semibold text-on-surface mb-2">No Achievements Yet</h3>
-            <p className="text-sm text-on-surface-secondary">
-              Complete focus sessions to start unlocking achievements!
-            </p>
-          </div>
-        )}
+        <AchievementsClient />
       </div>
     </div>
   )
 }
-
-

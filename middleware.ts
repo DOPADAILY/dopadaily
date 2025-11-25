@@ -56,15 +56,15 @@ export async function middleware(request: NextRequest) {
   )
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Use getSession instead of getUser - it's faster as it reads from cookie
+    // getUser() makes a network request to verify, getSession() just reads the JWT
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
     // If there's a network error, allow the request to continue
-    // The session cookie is still valid, just can't reach Supabase
-    if (authError && isNetworkError(authError)) {
+    if (sessionError && isNetworkError(sessionError)) {
       console.warn('[Middleware] Network error, allowing request to continue')
-      // Set a temporary flag to tell pages not to redirect during network issues
       response.cookies.set('network-issue', 'true', {
-        maxAge: 60, // Expire after 60 seconds
+        maxAge: 60,
         httpOnly: true,
         sameSite: 'lax'
       })
@@ -72,58 +72,54 @@ export async function middleware(request: NextRequest) {
     }
 
     // Clear the network issue flag if everything is working
-    if (user && response.cookies.get('network-issue')) {
+    if (session && response.cookies.get('network-issue')) {
       response.cookies.delete('network-issue')
     }
 
-    // Check if user is banned
-    if (user) {
+    // Only check ban status if user is logged in
+    // Skip ban check for non-critical pages to speed up navigation
+    const pathname = request.nextUrl.pathname
+    const criticalPages = ['/admin', '/forum', '/settings']
+    const shouldCheckBan = session?.user && criticalPages.some(p => pathname.startsWith(p))
+
+    if (shouldCheckBan && session?.user) {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_banned, banned_until')
-        .eq('id', user.id)
+        .eq('id', session.user.id)
         .single()
 
-      // If network error fetching profile, allow request to continue
       if (profileError && isNetworkError(profileError)) {
         console.warn('[Middleware] Network error fetching profile, allowing request to continue')
         return response
       }
 
       if (profile?.is_banned) {
-        // Check if ban has expired (for temporary bans)
+        // Check if ban has expired
         if (profile.banned_until) {
           const banExpiry = new Date(profile.banned_until)
-          const now = new Date()
+          if (new Date() >= banExpiry) {
+            // Ban expired - unban asynchronously (don't wait)
+            void supabase
+              .from('profiles')
+              .update({
+                is_banned: false,
+                ban_reason: null,
+                banned_until: null,
+                banned_by: null
+              })
+              .eq('id', session.user.id)
 
-          if (now >= banExpiry) {
-            // Ban has expired - automatically unban the user
-            try {
-              await supabase
-                .from('profiles')
-                .update({
-                  is_banned: false,
-                  ban_reason: null,
-                  banned_until: null,
-                  banned_by: null
-                })
-                .eq('id', user.id)
-            } catch (err) {
-              console.warn('[Middleware] Failed to unban user, likely network error')
-            }
-
-            // Allow the user to continue
             return response
           }
         }
 
-        // User is still banned - sign them out and redirect to banned page
+        // User is still banned
         await supabase.auth.signOut()
         return NextResponse.redirect(new URL('/banned', request.url))
       }
     }
   } catch (error) {
-    // On any unexpected error, log it but allow the request to continue
     console.error('[Middleware] Unexpected error:', error)
   }
 

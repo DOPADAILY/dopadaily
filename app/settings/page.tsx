@@ -12,10 +12,10 @@ export default async function SettingsPage() {
     redirect('/login')
   }
 
-  // Get user profile with preferences
+  // Get username for header - full profile is fetched client-side with TanStack Query
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, full_name, avatar_url, daily_goal, default_focus_duration, default_break_duration')
+    .select('username')
     .eq('id', user.id)
     .single()
 
@@ -33,16 +33,7 @@ export default async function SettingsPage() {
         </div>
       </header>
 
-      <SettingsClient 
-        userEmail={user.email || ''}
-        username={profile?.username || ''}
-        fullName={profile?.full_name || ''}
-        dailyGoal={profile?.daily_goal || 8}
-        defaultFocusDuration={profile?.default_focus_duration || 25}
-        defaultBreakDuration={profile?.default_break_duration || 5}
-      />
+      <SettingsClient userEmail={user.email || ''} />
     </div>
   )
 }
-
-

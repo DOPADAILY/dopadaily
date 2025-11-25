@@ -1,60 +1,97 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
-import { User, Settings, Save } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { User, Settings, Save, Loader2 } from 'lucide-react'
 import Toast from '@/components/Toast'
-import { updateProfile } from './actions'
+import { useProfile, useUpdateProfile } from '@/hooks/queries'
+import { SettingsSkeleton } from '@/components/SkeletonLoader'
 
 interface SettingsClientProps {
   userEmail: string
-  username: string
-  fullName: string
-  dailyGoal: number
-  defaultFocusDuration: number
-  defaultBreakDuration: number
 }
 
 type Tab = 'profile' | 'preferences'
 
-export default function SettingsClient({
-  userEmail,
-  username,
-  fullName,
-  dailyGoal,
-  defaultFocusDuration,
-  defaultBreakDuration
-}: SettingsClientProps) {
+export default function SettingsClient({ userEmail }: SettingsClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>('profile')
-  const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const profileFormRef = useRef<HTMLFormElement>(null)
   const preferencesFormRef = useRef<HTMLFormElement>(null)
 
-  const handleProfileSubmit = async (formData: FormData) => {
-    startTransition(async () => {
-      const result = await updateProfile(formData)
+  // TanStack Query hooks
+  const { data: profile, isLoading, error } = useProfile()
+  const updateProfile = useUpdateProfile()
 
-      if (result?.error) {
-        setToast({ message: result.error, type: 'error' })
-      } else {
-        setToast({ message: 'Profile updated successfully!', type: 'success' })
+  const handleProfileSubmit = async (formData: FormData) => {
+    const username = formData.get('username') as string
+    const full_name = formData.get('full_name') as string | null
+
+    updateProfile.mutate(
+      { username, full_name },
+      {
+        onSuccess: () => {
+          setToast({ message: 'Profile updated successfully!', type: 'success' })
+        },
+        onError: (err) => {
+          setToast({ message: err.message || 'Failed to update profile', type: 'error' })
+        },
       }
-    })
+    )
   }
 
   const handlePreferencesSubmit = async (formData: FormData) => {
-    startTransition(async () => {
-      const result = await updateProfile(formData)
+    const daily_goal = parseInt(formData.get('daily_goal') as string)
+    const default_focus_duration = parseInt(formData.get('default_focus_duration') as string)
+    const default_break_duration = parseInt(formData.get('default_break_duration') as string)
 
-      if (result?.error) {
-        setToast({ message: result.error, type: 'error' })
-      } else {
-        setToast({ message: 'Preferences updated successfully!', type: 'success' })
-        // Reload the page to update the timer store
-        window.location.reload()
+    updateProfile.mutate(
+      { daily_goal, default_focus_duration, default_break_duration },
+      {
+        onSuccess: () => {
+          setToast({ message: 'Preferences updated successfully!', type: 'success' })
+          // Reload to update the timer store
+          window.location.reload()
+        },
+        onError: (err) => {
+          setToast({ message: err.message || 'Failed to update preferences', type: 'error' })
+        },
       }
-    })
+    )
   }
+
+  // Only show skeleton on initial load when there's no cached data
+  if (isLoading && !profile) {
+    return <SettingsSkeleton />
+  }
+
+  // If we have no profile data after loading, show error
+  if (!profile && !isLoading) {
+    return (
+      <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12 max-w-4xl">
+        <div className="card text-center py-12">
+          <p className="text-error mb-4">Failed to load profile</p>
+          <p className="text-on-surface-secondary">Please try refreshing the page.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12 max-w-4xl">
+        <div className="card text-center py-12">
+          <p className="text-error mb-4">Failed to load settings</p>
+          <p className="text-on-surface-secondary">{error.message}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const isPending = updateProfile.isPending
+
+  // Guard against null profile (shouldn't happen after loading checks, but TypeScript safety)
+  if (!profile) return null
 
   return (
     <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12 max-w-4xl">
@@ -115,7 +152,7 @@ export default function SettingsClient({
                 type="text"
                 name="username"
                 id="username"
-                defaultValue={username}
+                defaultValue={profile.username || ''}
                 required
                 placeholder="Choose a username"
                 className="input w-full"
@@ -135,7 +172,7 @@ export default function SettingsClient({
                 type="text"
                 name="full_name"
                 id="full_name"
-                defaultValue={fullName}
+                defaultValue={profile.full_name || ''}
                 placeholder="Your full name (optional)"
                 className="input w-full"
                 disabled={isPending}
@@ -154,10 +191,7 @@ export default function SettingsClient({
               >
                 {isPending ? (
                   <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 size={18} className="animate-spin" />
                     Saving...
                   </>
                 ) : (
@@ -190,7 +224,7 @@ export default function SettingsClient({
                   id="daily_goal"
                   min="1"
                   max="20"
-                  defaultValue={dailyGoal}
+                  defaultValue={profile.daily_goal}
                   required
                   className="input w-32"
                   disabled={isPending}
@@ -215,7 +249,7 @@ export default function SettingsClient({
                   min="5"
                   max="60"
                   step="5"
-                  defaultValue={defaultFocusDuration}
+                  defaultValue={profile.default_focus_duration}
                   required
                   className="input w-32"
                   disabled={isPending}
@@ -239,7 +273,7 @@ export default function SettingsClient({
                   id="default_break_duration"
                   min="1"
                   max="30"
-                  defaultValue={defaultBreakDuration}
+                  defaultValue={profile.default_break_duration}
                   required
                   className="input w-32"
                   disabled={isPending}
@@ -260,10 +294,7 @@ export default function SettingsClient({
               >
                 {isPending ? (
                   <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Loader2 size={18} className="animate-spin" />
                     Saving...
                   </>
                 ) : (
@@ -290,5 +321,3 @@ export default function SettingsClient({
     </div>
   )
 }
-
-

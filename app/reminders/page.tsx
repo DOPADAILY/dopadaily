@@ -13,21 +13,12 @@ export default async function RemindersPage() {
     redirect('/login')
   }
 
-  // Get user profile for username and role
+  // Only fetch profile for header - reminders are fetched client-side with TanStack Query
   const { data: profile } = await supabase
     .from('profiles')
     .select('username, role')
     .eq('id', user.id)
     .single()
-
-  const { data: reminders } = await supabase
-    .from('reminders')
-    .select('*')
-    .or(`is_global.eq.true,created_by.eq.${user?.id}`)
-    .order('remind_at', { ascending: true })
-
-  const upcomingReminders = reminders?.filter(r => new Date(r.remind_at) > new Date()) || []
-  const pastReminders = reminders?.filter(r => new Date(r.remind_at) <= new Date()) || []
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,8 +41,6 @@ export default async function RemindersPage() {
           {/* Reminders List */}
           <div className="xl:col-span-2 space-y-6">
             <RemindersClient 
-              upcomingReminders={upcomingReminders}
-              pastReminders={pastReminders}
               userId={user.id}
               isAdmin={profile?.role === 'admin'}
             />
