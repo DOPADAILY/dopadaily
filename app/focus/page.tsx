@@ -12,10 +12,10 @@ export default async function FocusPage() {
     redirect('/login')
   }
 
-  // Only fetch profile for header - stats are fetched client-side with TanStack Query
+  // Fetch profile with user preferences for timer initialization
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username')
+    .select('username, default_focus_duration, default_break_duration')
     .eq('id', user.id)
     .single()
 
@@ -34,7 +34,10 @@ export default async function FocusPage() {
       </header>
 
       <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
-        <FocusPageClient />
+        <FocusPageClient
+          initialFocusDuration={profile?.default_focus_duration || 25}
+          initialBreakDuration={profile?.default_break_duration || 5}
+        />
       </div>
     </div>
   )

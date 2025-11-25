@@ -8,21 +8,34 @@ import StatCard from '@/components/StatCard'
 import { useFocusPageStats } from '@/hooks/queries'
 import { SkeletonPulse } from '@/components/SkeletonLoader'
 
-export default function FocusPageClient() {
+interface FocusPageClientProps {
+  initialFocusDuration: number
+  initialBreakDuration: number
+}
+
+export default function FocusPageClient({ initialFocusDuration, initialBreakDuration }: FocusPageClientProps) {
   const setUserPreferences = useTimerStore((state) => state.setUserPreferences)
-  
+
   // TanStack Query hook
   const { data: stats, isLoading } = useFocusPageStats()
 
+  // Initialize timer store immediately with server-provided preferences
   useEffect(() => {
-    // Load user preferences into timer store
+    setUserPreferences({
+      defaultFocusDuration: initialFocusDuration,
+      defaultBreakDuration: initialBreakDuration,
+    })
+  }, [initialFocusDuration, initialBreakDuration, setUserPreferences])
+
+  // Update if stats change (e.g., user updates preferences)
+  useEffect(() => {
     if (stats?.profile) {
       setUserPreferences({
-        defaultFocusDuration: stats.profile.default_focus_duration || 25,
-        defaultBreakDuration: stats.profile.default_break_duration || 5,
+        defaultFocusDuration: stats.profile.default_focus_duration || initialFocusDuration,
+        defaultBreakDuration: stats.profile.default_break_duration || initialBreakDuration,
       })
     }
-  }, [stats?.profile, setUserPreferences])
+  }, [stats?.profile, initialFocusDuration, initialBreakDuration, setUserPreferences])
 
   // Calculate daily goals
   const dailyGoalSessions = stats?.profile?.daily_goal || 8
