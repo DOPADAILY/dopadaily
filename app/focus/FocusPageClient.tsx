@@ -172,13 +172,23 @@ export default function FocusPageClient({ initialFocusDuration, initialBreakDura
               {milestoneProgress.sessionsToGo} {milestoneProgress.sessionsToGo === 1 ? 'session' : 'sessions'} to go!
             </p>
           </div>
-        ) : (
+        ) : milestoneProgress && milestoneProgress.totalMilestones > 0 ? (
           <div className="card bg-linear-to-br from-primary to-secondary text-neutral-medium border-primary">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-2xl">👑</span>
               <h3 className="font-semibold">All Complete!</h3>
             </div>
             <p className="text-sm text-neutral-medium">You've unlocked all achievements!</p>
+          </div>
+        ) : (
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-2xl">🎯</span>
+              <h3 className="font-semibold text-on-surface">Milestones</h3>
+            </div>
+            <p className="text-sm text-on-surface-secondary">
+              No milestones yet. Keep focusing — achievements are coming soon!
+            </p>
           </div>
         )}
       </div>
