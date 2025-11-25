@@ -7,6 +7,7 @@ import { Play, Pause, RotateCcw, Coffee, Brain } from 'lucide-react'
 import Toast from '@/components/Toast'
 import AchievementModal from '@/components/AchievementModal'
 import QuickNote from '@/components/QuickNote'
+import { useTimerSound } from '@/hooks/useTimerSound'
 
 export default function Timer() {
   const {
@@ -24,10 +25,14 @@ export default function Timer() {
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [achievementModal, setAchievementModal] = useState<any | null>(null)
+  const { playCompletionSound } = useTimerSound()
 
   // Set up completion handler
   useEffect(() => {
     setOnComplete(async (durationSeconds, sessionMode) => {
+      // Play completion sound
+      playCompletionSound()
+
       startTransition(async () => {
         const result = await saveFocusSession(durationSeconds, sessionMode)
 
@@ -49,7 +54,7 @@ export default function Timer() {
         }
       })
     })
-  }, [setOnComplete])
+  }, [setOnComplete, playCompletionSound])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
