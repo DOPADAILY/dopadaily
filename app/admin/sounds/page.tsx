@@ -1,29 +1,24 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Music, Upload, Trash2, Play, Pause, Plus, Search, Filter, Sparkles, Waves } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import BackButton from '@/components/BackButton'
 import ConfirmModal from '@/components/ConfirmModal'
 import Select from '@/components/Select'
 import Toast from '@/components/Toast'
-
-interface AmbientSound {
-    id: string
-    title: string
-    description: string | null
-    file_url: string
-    file_name: string
-    file_size: number | null
-    duration: number | null
-    category: string
-    is_active: boolean
-    play_count: number
-    created_at: string
-}
+import {
+    useAdminSounds,
+    useUploadSound,
+    useDeleteSound,
+    useToggleSoundActive,
+    adminSoundsKeys,
+    type AdminSound,
+} from '@/hooks/queries'
 
 const CATEGORIES = [
     'nature',
@@ -52,20 +47,23 @@ const formCategoryOptions = CATEGORIES.map(cat => ({
 
 export default function AdminSoundsPage() {
     const router = useRouter()
-    const [sounds, setSounds] = useState<AmbientSound[]>([])
-    const [filteredSounds, setFilteredSounds] = useState<AmbientSound[]>([])
+    const queryClient = useQueryClient()
     const [searchQuery, setSearchQuery] = useState('')
     const [filterCategory, setFilterCategory] = useState('')
     const [currentUser, setCurrentUser] = useState<any>(null)
     const [profile, setProfile] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [playingId, setPlayingId] = useState<string | null>(null)
     const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
-    const [deletingSound, setDeletingSound] = useState<AmbientSound | null>(null)
-    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [deletingSound, setDeletingSound] = useState<AdminSound | null>(null)
     const [uploadProgress, setUploadProgress] = useState(0)
     const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null)
+
+    // TanStack Query hooks
+    const { data: sounds = [], isLoading: loading } = useAdminSounds()
+    const uploadMutation = useUploadSound()
+    const deleteMutation = useDeleteSound()
+    const toggleActiveMutation = useToggleSoundActive()
 
     // Form state
     const [formData, setFormData] = useState({
@@ -75,6 +73,24 @@ export default function AdminSoundsPage() {
         is_active: true,
         file: null as File | null
     })
+
+    // Filter sounds with useMemo
+    const filteredSounds = useMemo(() => {
+        let filtered = sounds
+
+        if (searchQuery) {
+            filtered = filtered.filter(sound =>
+                sound.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                sound.description?.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+        }
+
+        if (filterCategory) {
+            filtered = filtered.filter(sound => sound.category === filterCategory)
+        }
+
+        return filtered
+    }, [searchQuery, filterCategory, sounds])
 
     useEffect(() => {
         const supabase = createClient()
@@ -102,33 +118,13 @@ export default function AdminSoundsPage() {
             setProfile(profileData)
         }
 
-        const fetchSounds = async () => {
-            try {
-                const supabase = createClient()
-                const { data, error } = await supabase
-                    .from('ambient_sounds')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-
-                if (error) throw error
-                setSounds(data || [])
-                setFilteredSounds(data || [])
-            } catch (error) {
-                console.error('Error fetching sounds:', error)
-                setToast({ message: 'Failed to load sounds', variant: 'error' })
-            } finally {
-                setLoading(false)
-            }
-        }
-
         checkAuth()
-        fetchSounds()
 
         // Subscribe to real-time updates
         const channel = supabase
             .channel('ambient_sounds_changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'ambient_sounds' }, () => {
-                fetchSounds()
+                queryClient.invalidateQueries({ queryKey: adminSoundsKeys.lists() })
             })
             .subscribe()
 
@@ -139,25 +135,7 @@ export default function AdminSoundsPage() {
                 audioElement.src = ''
             }
         }
-    }, [router])
-
-    // Filter sounds
-    useEffect(() => {
-        let filtered = sounds
-
-        if (searchQuery) {
-            filtered = filtered.filter(sound =>
-                sound.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                sound.description?.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-        }
-
-        if (filterCategory) {
-            filtered = filtered.filter(sound => sound.category === filterCategory)
-        }
-
-        setFilteredSounds(filtered)
-    }, [searchQuery, filterCategory, sounds])
+    }, [router, queryClient, audioElement])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -187,78 +165,17 @@ export default function AdminSoundsPage() {
             return
         }
 
-        setIsSubmitting(true)
         setUploadProgress(0)
 
         try {
-            const supabase = createClient()
-
-            // Sanitize filename
-            const timestamp = Date.now()
-            const sanitizedTitle = formData.title.toLowerCase().replace(/[^a-z0-9]/g, '-')
-            const fileExt = formData.file.name.split('.').pop()
-            const fileName = `${timestamp}_${sanitizedTitle}.${fileExt}`
-
-            // Upload to Supabase Storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('ambient-sounds')
-                .upload(fileName, formData.file, {
-                    cacheControl: '3600',
-                    upsert: false
-                })
-
-            if (uploadError) throw uploadError
-
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('ambient-sounds')
-                .getPublicUrl(fileName)
-
-            // Get audio duration (if possible)
-            let duration: number | null = null
-            try {
-                const audio = new Audio(URL.createObjectURL(formData.file))
-                await new Promise((resolve) => {
-                    audio.addEventListener('loadedmetadata', () => {
-                        duration = Math.round(audio.duration)
-                        resolve(null)
-                    })
-                })
-            } catch (err) {
-                console.log('Could not get duration:', err)
-            }
-
-            // Save metadata to database
-            const { data: newSound, error: dbError } = await supabase
-                .from('ambient_sounds')
-                .insert({
-                    title: formData.title,
-                    description: formData.description || null,
-                    file_url: publicUrl,
-                    file_name: fileName,
-                    file_size: formData.file.size,
-                    duration: duration,
-                    category: formData.category,
-                    is_active: formData.is_active,
-                    created_by: currentUser?.id
-                })
-                .select()
-                .single()
-
-            if (dbError) throw dbError
-
-            // Log admin activity
-            if (newSound) {
-                await supabase
-                    .from('admin_audit_log')
-                    .insert({
-                        admin_id: currentUser?.id,
-                        action: 'created',
-                        target_table: 'ambient_sounds',
-                        target_id: newSound.id,
-                        details: `Uploaded sound: ${formData.title} (${formData.category})`
-                    })
-            }
+            await uploadMutation.mutateAsync({
+                title: formData.title,
+                description: formData.description,
+                category: formData.category,
+                is_active: formData.is_active,
+                file: formData.file,
+                created_by: currentUser?.id
+            })
 
             setToast({ message: 'Sound uploaded successfully!', variant: 'success' })
             setIsCreateOpen(false)
@@ -269,22 +186,10 @@ export default function AdminSoundsPage() {
                 is_active: true,
                 file: null
             })
-
-            // Refresh sounds list
-            const { data: soundsData } = await supabase
-                .from('ambient_sounds')
-                .select('*')
-                .order('created_at', { ascending: false })
-
-            if (soundsData) {
-                setSounds(soundsData)
-                setFilteredSounds(soundsData)
-            }
         } catch (error: any) {
             console.error('Error uploading sound:', error)
             setToast({ message: error.message || 'Failed to upload sound', variant: 'error' })
         } finally {
-            setIsSubmitting(false)
             setUploadProgress(0)
         }
     }
@@ -292,59 +197,23 @@ export default function AdminSoundsPage() {
     const handleDelete = async () => {
         if (!deletingSound) return
 
-        setIsSubmitting(true)
-
         try {
-            const supabase = createClient()
-
-            // Delete from storage
-            const { error: storageError } = await supabase.storage
-                .from('ambient-sounds')
-                .remove([deletingSound.file_name])
-
-            if (storageError) console.error('Storage deletion error:', storageError)
-
-            // Delete from database
-            const { error: dbError } = await supabase
-                .from('ambient_sounds')
-                .delete()
-                .eq('id', deletingSound.id)
-
-            if (dbError) throw dbError
-
-            // Log admin activity
-            await supabase
-                .from('admin_audit_log')
-                .insert({
-                    admin_id: currentUser?.id,
-                    action: 'deleted',
-                    target_table: 'ambient_sounds',
-                    target_id: deletingSound.id,
-                    details: `Deleted sound: ${deletingSound.title}`
-                })
+            await deleteMutation.mutateAsync({
+                id: deletingSound.id,
+                file_name: deletingSound.file_name,
+                title: deletingSound.title,
+                admin_id: currentUser?.id
+            })
 
             setToast({ message: 'Sound deleted successfully', variant: 'success' })
             setDeletingSound(null)
-
-            // Refresh sounds list
-            const { data: soundsData } = await supabase
-                .from('ambient_sounds')
-                .select('*')
-                .order('created_at', { ascending: false })
-
-            if (soundsData) {
-                setSounds(soundsData)
-                setFilteredSounds(soundsData)
-            }
         } catch (error: any) {
             console.error('Error deleting sound:', error)
             setToast({ message: error.message || 'Failed to delete sound', variant: 'error' })
-        } finally {
-            setIsSubmitting(false)
         }
     }
 
-    const togglePlay = (sound: AmbientSound) => {
+    const togglePlay = (sound: AdminSound) => {
         if (playingId === sound.id) {
             audioElement?.pause()
             setPlayingId(null)
@@ -365,30 +234,16 @@ export default function AdminSoundsPage() {
         }
     }
 
-    const toggleActive = async (sound: AmbientSound) => {
+    const toggleActive = async (sound: AdminSound) => {
         try {
-            const supabase = createClient()
-            const newStatus = !sound.is_active
+            await toggleActiveMutation.mutateAsync({
+                id: sound.id,
+                is_active: sound.is_active,
+                title: sound.title,
+                admin_id: currentUser?.id
+            })
 
-            const { error } = await supabase
-                .from('ambient_sounds')
-                .update({ is_active: newStatus })
-                .eq('id', sound.id)
-
-            if (error) throw error
-
-            // Log admin activity
-            await supabase
-                .from('admin_audit_log')
-                .insert({
-                    admin_id: currentUser?.id,
-                    action: 'updated',
-                    target_table: 'ambient_sounds',
-                    target_id: sound.id,
-                    details: `${newStatus ? 'Activated' : 'Deactivated'} sound: ${sound.title}`
-                })
-
-            setToast({ message: `Sound ${newStatus ? 'activated' : 'deactivated'}`, variant: 'success' })
+            setToast({ message: `Sound ${!sound.is_active ? 'activated' : 'deactivated'}`, variant: 'success' })
         } catch (error: any) {
             console.error('Error updating sound:', error)
             setToast({ message: 'Failed to update sound status', variant: 'error' })
@@ -658,8 +513,8 @@ export default function AdminSoundsPage() {
                                 Upload Sound
                             </h2>
                             <button
-                                onClick={() => !isSubmitting && setIsCreateOpen(false)}
-                                disabled={isSubmitting}
+                                onClick={() => !uploadMutation.isPending && setIsCreateOpen(false)}
+                                disabled={uploadMutation.isPending}
                                 className="p-2 hover:bg-backplate rounded-lg transition-colors disabled:opacity-50"
                             >
                                 <Music size={20} />
@@ -680,7 +535,7 @@ export default function AdminSoundsPage() {
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                     placeholder="e.g., Ocean Waves, Rain Forest, White Noise"
                                     className="w-full px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                    disabled={isSubmitting}
+                                    disabled={uploadMutation.isPending}
                                 />
                             </div>
 
@@ -696,7 +551,7 @@ export default function AdminSoundsPage() {
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     placeholder="Describe the sound..."
                                     className="w-full px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y"
-                                    disabled={isSubmitting}
+                                    disabled={uploadMutation.isPending}
                                 />
                             </div>
 
@@ -710,7 +565,7 @@ export default function AdminSoundsPage() {
                                     value={formData.category}
                                     onChange={(value) => setFormData({ ...formData, category: value })}
                                     options={formCategoryOptions}
-                                    disabled={isSubmitting}
+                                    disabled={uploadMutation.isPending}
                                 />
                             </div>
 
@@ -726,7 +581,7 @@ export default function AdminSoundsPage() {
                                     required
                                     onChange={handleFileChange}
                                     className="w-full px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90 file:cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                    disabled={isSubmitting}
+                                    disabled={uploadMutation.isPending}
                                 />
                                 <p className="text-xs text-on-surface-secondary mt-1">
                                     Supported: MP3, WAV, OGG, WebM, AAC (Max 50MB)
@@ -746,7 +601,7 @@ export default function AdminSoundsPage() {
                                     checked={formData.is_active}
                                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                                     className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
-                                    disabled={isSubmitting}
+                                    disabled={uploadMutation.isPending}
                                 />
                                 <label htmlFor="is_active" className="text-sm text-on-surface">
                                     Make sound active immediately
@@ -757,10 +612,10 @@ export default function AdminSoundsPage() {
                             <div className="flex items-center gap-3 pt-4 border-t border-border">
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting || !formData.file}
+                                    disabled={uploadMutation.isPending || !formData.file}
                                     className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isSubmitting ? (
+                                    {uploadMutation.isPending ? (
                                         <>
                                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                             Uploading...
@@ -775,7 +630,7 @@ export default function AdminSoundsPage() {
                                 <button
                                     type="button"
                                     onClick={() => setIsCreateOpen(false)}
-                                    disabled={isSubmitting}
+                                    disabled={uploadMutation.isPending}
                                     className="btn btn-ghost disabled:opacity-50"
                                 >
                                     Cancel
@@ -796,7 +651,7 @@ export default function AdminSoundsPage() {
                     message={`Are you sure you want to delete "${deletingSound.title}"? This will also remove the audio file from storage.`}
                     confirmText="Delete"
                     variant="danger"
-                    isLoading={isSubmitting}
+                    isLoading={deleteMutation.isPending}
                 />
             )}
 

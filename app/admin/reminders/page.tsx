@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, Plus, Calendar, Clock, Trash2, AlertCircle, Edit2 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import BackButton from '@/components/BackButton'
@@ -11,31 +12,31 @@ import Modal from '@/components/Modal'
 import ConfirmModal from '@/components/ConfirmModal'
 import Select from '@/components/Select'
 import Toast from '@/components/Toast'
-import { deleteGlobalReminder } from '../content/actions'
-
-interface Reminder {
-  id: number
-  title: string
-  message: string | null
-  category: string
-  remind_at: string
-  recurrence_pattern: string | null
-  is_global: boolean
-  created_at: string
-}
+import {
+  useAdminReminders,
+  useCreateGlobalReminder,
+  useUpdateGlobalReminder,
+  useDeleteGlobalReminder,
+  adminRemindersKeys,
+  type GlobalReminder,
+} from '@/hooks/queries'
 
 export default function AdminRemindersPage() {
   const router = useRouter()
-  const [reminders, setReminders] = useState<Reminder[]>([])
+  const queryClient = useQueryClient()
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
-  const [deletingReminder, setDeletingReminder] = useState<Reminder | null>(null)
+  const [editingReminder, setEditingReminder] = useState<GlobalReminder | null>(null)
+  const [deletingReminder, setDeletingReminder] = useState<GlobalReminder | null>(null)
   const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' | 'info' | 'warning' } | null>(null)
   const [showToast, setShowToast] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // TanStack Query hooks
+  const { data: reminders = [], isLoading: loading } = useAdminReminders()
+  const createMutation = useCreateGlobalReminder()
+  const updateMutation = useUpdateGlobalReminder()
+  const deleteMutation = useDeleteGlobalReminder()
 
   useEffect(() => {
     const supabase = createClient()
@@ -62,23 +63,7 @@ export default function AdminRemindersPage() {
       setProfile(profileData)
     }
 
-    const initialFetchReminders = async () => {
-      const { data, error } = await supabase
-        .from('reminders')
-        .select('*')
-        .eq('is_global', true)
-        .order('remind_at', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching reminders:', error)
-      } else {
-        setReminders(data || [])
-      }
-      setLoading(false)
-    }
-
     checkAuth()
-    initialFetchReminders()
 
     const channel = supabase
       .channel('reminders-changes')
@@ -90,7 +75,7 @@ export default function AdminRemindersPage() {
           table: 'reminders',
         },
         () => {
-          initialFetchReminders()
+          queryClient.invalidateQueries({ queryKey: adminRemindersKeys.lists() })
         }
       )
       .subscribe()
@@ -98,50 +83,29 @@ export default function AdminRemindersPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [router])
-
-  const fetchReminders = async () => {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('reminders')
-      .select('*')
-      .eq('is_global', true)
-      .order('remind_at', { ascending: true })
-
-    if (error) {
-      console.error('Error fetching reminders:', error)
-    } else {
-      setReminders(data || [])
-    }
-  }
+  }, [router, queryClient])
 
   const handleCreateReminder = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsSubmitting(true)
 
     const formData = new FormData(e.currentTarget)
-    const supabase = createClient()
 
-    const { error } = await supabase.from('reminders').insert({
-      title: formData.get('title') as string,
-      message: formData.get('message') as string || null,
-      category: formData.get('category') as string,
-      remind_at: formData.get('remind_at') as string,
-      recurrence_pattern: formData.get('recurrence_pattern') as string || null,
-      is_global: true,
-      created_by: user.id,
-    })
+    try {
+      await createMutation.mutateAsync({
+        title: formData.get('title') as string,
+        message: formData.get('message') as string || null,
+        category: formData.get('category') as string,
+        remind_at: formData.get('remind_at') as string,
+        recurrence_pattern: formData.get('recurrence_pattern') as string || null,
+        created_by: user.id,
+      })
 
-    setIsSubmitting(false)
-
-    if (error) {
+      setIsCreateOpen(false)
+      setToast({ message: 'Reminder created successfully', variant: 'success' })
+      setShowToast(true)
+    } catch (error) {
       console.error('Error creating reminder:', error)
       setToast({ message: 'Failed to create reminder', variant: 'error' })
-      setShowToast(true)
-    } else {
-      setIsCreateOpen(false)
-      await fetchReminders() // Immediate refresh
-      setToast({ message: 'Reminder created successfully', variant: 'success' })
       setShowToast(true)
     }
   }
@@ -150,32 +114,24 @@ export default function AdminRemindersPage() {
     e.preventDefault()
     if (!editingReminder) return
 
-    setIsSubmitting(true)
-
     const formData = new FormData(e.currentTarget)
-    const supabase = createClient()
 
-    const { error } = await supabase
-      .from('reminders')
-      .update({
+    try {
+      await updateMutation.mutateAsync({
+        id: editingReminder.id,
         title: formData.get('title') as string,
         message: formData.get('message') as string || null,
         category: formData.get('category') as string,
         remind_at: formData.get('remind_at') as string,
         recurrence_pattern: formData.get('recurrence_pattern') as string || null,
       })
-      .eq('id', editingReminder.id)
 
-    setIsSubmitting(false)
-
-    if (error) {
+      setEditingReminder(null)
+      setToast({ message: 'Reminder updated successfully', variant: 'success' })
+      setShowToast(true)
+    } catch (error) {
       console.error('Error updating reminder:', error)
       setToast({ message: 'Failed to update reminder', variant: 'error' })
-      setShowToast(true)
-    } else {
-      setEditingReminder(null)
-      await fetchReminders() // Immediate refresh
-      setToast({ message: 'Reminder updated successfully', variant: 'success' })
       setShowToast(true)
     }
   }
@@ -454,10 +410,10 @@ export default function AdminRemindersPage() {
           <div className="flex items-center gap-4 pt-4 border-t border-border">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={createMutation.isPending || updateMutation.isPending}
               className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
+              {createMutation.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   Creating...
@@ -473,7 +429,7 @@ export default function AdminRemindersPage() {
               type="button"
               onClick={() => setIsCreateOpen(false)}
               className="btn btn-ghost"
-              disabled={isSubmitting}
+              disabled={createMutation.isPending || updateMutation.isPending}
             >
               Cancel
             </button>
@@ -568,10 +524,10 @@ export default function AdminRemindersPage() {
           <div className="flex items-center gap-4 pt-4 border-t border-border">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={createMutation.isPending || updateMutation.isPending}
               className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
+              {createMutation.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   Updating...
@@ -587,7 +543,7 @@ export default function AdminRemindersPage() {
               type="button"
               onClick={() => setEditingReminder(null)}
               className="btn btn-ghost"
-              disabled={isSubmitting}
+              disabled={createMutation.isPending || updateMutation.isPending}
             >
               Cancel
             </button>
@@ -601,29 +557,20 @@ export default function AdminRemindersPage() {
           isOpen={!!deletingReminder}
           onClose={() => setDeletingReminder(null)}
           onConfirm={async () => {
-            setIsSubmitting(true)
-            const supabase = createClient()
-            const { error } = await supabase
-              .from('reminders')
-              .delete()
-              .eq('id', deletingReminder.id)
-
-            setIsSubmitting(false)
-            setDeletingReminder(null)
-
-            if (error) {
+            try {
+              await deleteMutation.mutateAsync(deletingReminder.id)
+              setDeletingReminder(null)
+              setToast({ message: 'Reminder deleted successfully', variant: 'success' })
+              setShowToast(true)
+            } catch (error) {
               console.error('Error deleting reminder:', error)
               setToast({ message: 'Failed to delete reminder', variant: 'error' })
-              setShowToast(true)
-            } else {
-              await fetchReminders() // Immediate refresh
-              setToast({ message: 'Reminder deleted successfully', variant: 'success' })
               setShowToast(true)
             }
           }}
           title="Delete Reminder?"
           message={`Are you sure you want to delete "${deletingReminder.title}"? This action cannot be undone.`}
-          confirmText={isSubmitting ? 'Deleting...' : 'Delete'}
+          confirmText={deleteMutation.isPending ? 'Deleting...' : 'Delete'}
           cancelText="Cancel"
           variant="danger"
         />

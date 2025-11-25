@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Plus, Trash2, MessageSquare, Lightbulb, CheckCircle, XCircle, Eye, Search, Filter as FilterIcon } from 'lucide-react'
+import { FileText, Plus, Trash2, MessageSquare, Lightbulb, CheckCircle, XCircle, Eye, Search } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import BackButton from '@/components/BackButton'
@@ -11,48 +12,42 @@ import Modal from '@/components/Modal'
 import ConfirmModal from '@/components/ConfirmModal'
 import Select from '@/components/Select'
 import Toast from '@/components/Toast'
-import { deleteDailyTip, deleteForumPost } from './actions'
 import PostDetailModal from './PostDetailModal'
 import CommentsTab from './CommentsTab'
-
-interface DailyTip {
-  id: number
-  title: string
-  content: string
-  category: string
-  is_active: boolean
-  created_at: string
-}
-
-interface ForumPost {
-  id: number
-  title: string
-  content: string
-  category: string
-  created_at: string
-  user_id: string
-  profiles: {
-    username: string
-  } | null
-}
+import {
+  useDailyTips,
+  useCreateDailyTip,
+  useDeleteDailyTip,
+  useAdminForumPosts,
+  useDeleteForumPost,
+  contentKeys,
+  type DailyTip,
+  type AdminForumPost,
+} from '@/hooks/queries'
 
 export default function ContentPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'tips' | 'posts' | 'comments'>('posts')
-  const [tips, setTips] = useState<DailyTip[]>([])
-  const [posts, setPosts] = useState<ForumPost[]>([])
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [isCreateTipOpen, setIsCreateTipOpen] = useState(false)
   const [deletingTip, setDeletingTip] = useState<DailyTip | null>(null)
-  const [deletingPost, setDeletingPost] = useState<ForumPost | null>(null)
+  const [deletingPost, setDeletingPost] = useState<AdminForumPost | null>(null)
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' | 'info' | 'warning' } | null>(null)
   const [showToast, setShowToast] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // TanStack Query hooks
+  const { data: tips = [], isLoading: tipsLoading } = useDailyTips()
+  const { data: posts = [], isLoading: postsLoading } = useAdminForumPosts()
+  const createTipMutation = useCreateDailyTip()
+  const deleteTipMutation = useDeleteDailyTip()
+  const deletePostMutation = useDeleteForumPost()
+
+  const loading = tipsLoading && postsLoading
 
   useEffect(() => {
     const supabase = createClient()
@@ -79,60 +74,7 @@ export default function ContentPage() {
       setProfile(profileData)
     }
 
-    const initialFetchData = async () => {
-      // Fetch tips
-      const { data: tipsData, error: tipsError } = await supabase
-        .from('daily_tips')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (tipsError) {
-        console.error('Error fetching tips:', tipsError)
-      } else {
-        setTips(tipsData || [])
-      }
-
-    // Fetch recent posts (may not have proper relationships yet)
-    try {
-      const { data: postsData, error: postsError } = await supabase
-        .from('forum_posts')
-        .select('*, profiles(username)')
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      if (postsError) {
-        // Check if it's a relationship error (PGRST200)
-        if (postsError.code === 'PGRST200') {
-          console.warn('Forum posts table exists but missing foreign key relationship to profiles')
-          // Fetch without the join as fallback
-          const { data: postsOnly, error: postsOnlyError } = await supabase
-            .from('forum_posts')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(20)
-          
-          if (!postsOnlyError) {
-            setPosts(postsOnly || [])
-          } else {
-            setPosts([])
-          }
-        } else {
-          console.error('Error fetching posts:', postsError)
-          setPosts([])
-        }
-      } else {
-        setPosts(postsData || [])
-      }
-    } catch (err) {
-      console.error('Forum posts error:', err)
-      setPosts([])
-    }
-
-      setLoading(false)
-    }
-
     checkAuth()
-    initialFetchData()
 
     // Subscribe to tips changes
     const tipsChannel = supabase
@@ -145,7 +87,7 @@ export default function ContentPage() {
           table: 'daily_tips',
         },
         () => {
-          initialFetchData()
+          queryClient.invalidateQueries({ queryKey: contentKeys.tips() })
         }
       )
       .subscribe()
@@ -161,7 +103,7 @@ export default function ContentPage() {
           table: 'forum_posts',
         },
         () => {
-          initialFetchData()
+          queryClient.invalidateQueries({ queryKey: contentKeys.posts() })
         }
       )
       .subscribe()
@@ -170,68 +112,58 @@ export default function ContentPage() {
       supabase.removeChannel(tipsChannel)
       supabase.removeChannel(postsChannel)
     }
-  }, [router])
-
-  const fetchData = async () => {
-    const supabase = createClient()
-    
-    // Fetch tips
-    const { data: tipsData, error: tipsError } = await supabase
-      .from('daily_tips')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (tipsError) {
-      console.error('Error fetching tips:', tipsError)
-      console.error('Full tips error details:', JSON.stringify(tipsError, null, 2))
-      setTips([])
-    } else {
-      setTips(tipsData || [])
-    }
-
-    // Fetch recent posts
-    const { data: postsData, error: postsError } = await supabase
-      .from('forum_posts')
-      .select('*, profiles(username)')
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    if (postsError) {
-      console.error('Error fetching posts:', postsError)
-    } else {
-      setPosts(postsData || [])
-    }
-  }
+  }, [router, queryClient])
 
   const handleCreateTip = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsSubmitting(true)
-    
-    const formData = new FormData(e.currentTarget)
-    const supabase = createClient()
-    
-    const { error } = await supabase.from('daily_tips').insert({
-      title: formData.get('title') as string,
-      content: formData.get('content') as string,
-      category: formData.get('category') as string,
-      is_active: (formData.get('is_active') as string) === 'on',
-      created_by: user.id,
-    })
 
-    setIsSubmitting(false)
-    
-    if (error) {
+    const formData = new FormData(e.currentTarget)
+
+    try {
+      await createTipMutation.mutateAsync({
+        title: formData.get('title') as string,
+        content: formData.get('content') as string,
+        category: formData.get('category') as string,
+        is_active: (formData.get('is_active') as string) === 'on',
+        created_by: user.id,
+      })
+
+      setIsCreateTipOpen(false)
+      setToast({ message: 'Tip created successfully', variant: 'success' })
+      setShowToast(true)
+    } catch (error: any) {
       console.error('Error creating tip:', error)
-      console.error('Full error details:', JSON.stringify(error, null, 2))
-      console.error('Error code:', error.code)
-      console.error('Error message:', error.message)
-      console.error('Error details:', error.details)
       setToast({ message: `Failed to create tip: ${error.message || 'Unknown error'}`, variant: 'error' })
       setShowToast(true)
-    } else {
-      setIsCreateTipOpen(false)
-      await fetchData() // Immediate refresh
-      setToast({ message: 'Tip created successfully', variant: 'success' })
+    }
+  }
+
+  const handleDeleteTip = async () => {
+    if (!deletingTip) return
+
+    try {
+      await deleteTipMutation.mutateAsync(deletingTip.id)
+      setDeletingTip(null)
+      setToast({ message: 'Tip deleted successfully', variant: 'success' })
+      setShowToast(true)
+    } catch (error) {
+      console.error('Error deleting tip:', error)
+      setToast({ message: 'Failed to delete tip', variant: 'error' })
+      setShowToast(true)
+    }
+  }
+
+  const handleDeletePost = async () => {
+    if (!deletingPost) return
+
+    try {
+      await deletePostMutation.mutateAsync(deletingPost.id)
+      setDeletingPost(null)
+      setToast({ message: 'Post deleted successfully', variant: 'success' })
+      setShowToast(true)
+    } catch (error) {
+      console.error('Error deleting post:', error)
+      setToast({ message: 'Failed to delete post', variant: 'error' })
       setShowToast(true)
     }
   }
@@ -302,33 +234,30 @@ export default function ContentPage() {
           <div className="flex gap-1 overflow-x-auto">
             <button
               onClick={() => setActiveTab('posts')}
-              className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'posts'
+              className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${activeTab === 'posts'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-on-surface-secondary hover:text-on-surface'
-              }`}
+                }`}
             >
               <MessageSquare size={18} className="inline mr-2" />
               Forum Posts
             </button>
             <button
               onClick={() => setActiveTab('comments')}
-              className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'comments'
+              className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${activeTab === 'comments'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-on-surface-secondary hover:text-on-surface'
-              }`}
+                }`}
             >
               <MessageSquare size={18} className="inline mr-2" />
               Comments
             </button>
             <button
               onClick={() => setActiveTab('tips')}
-              className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'tips'
+              className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${activeTab === 'tips'
                   ? 'border-primary text-primary'
                   : 'border-transparent text-on-surface-secondary hover:text-on-surface'
-              }`}
+                }`}
             >
               <Lightbulb size={18} className="inline mr-2" />
               Daily Tips
@@ -344,49 +273,49 @@ export default function ContentPage() {
               Daily Tips Library
             </h2>
 
-          {tips.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {tips.map((tip) => (
-                <div key={tip.id} className="card">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-on-surface">{tip.title}</h3>
-                        {tip.is_active ? (
-                          <CheckCircle size={16} className="text-success flex-shrink-0" />
-                        ) : (
-                          <XCircle size={16} className="text-neutral-medium flex-shrink-0" />
-                        )}
+            {tips.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {tips.map((tip) => (
+                  <div key={tip.id} className="card">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-on-surface">{tip.title}</h3>
+                          {tip.is_active ? (
+                            <CheckCircle size={16} className="text-success flex-shrink-0" />
+                          ) : (
+                            <XCircle size={16} className="text-neutral-medium flex-shrink-0" />
+                          )}
+                        </div>
+                        <span className="inline-block px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
+                          {tip.category}
+                        </span>
                       </div>
-                      <span className="inline-block px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
-                        {tip.category}
-                      </span>
+                      <button
+                        onClick={() => setDeletingTip(tip)}
+                        className="text-error hover:bg-error/10 p-2 rounded-lg transition-colors flex-shrink-0"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setDeletingTip(tip)}
-                      className="text-error hover:bg-error/10 p-2 rounded-lg transition-colors flex-shrink-0"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    <p className="text-sm text-on-surface-secondary">{tip.content}</p>
                   </div>
-                  <p className="text-sm text-on-surface-secondary">{tip.content}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 card">
-              <Lightbulb size={48} className="mx-auto text-neutral-medium mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold text-on-surface mb-2">No tips yet</h3>
-              <p className="text-on-surface-secondary mb-6">Create your first daily tip!</p>
-              <button
-                onClick={() => setIsCreateTipOpen(true)}
-                className="btn btn-primary inline-flex items-center gap-2"
-              >
-                <Plus size={20} />
-                Create First Tip
-              </button>
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 card">
+                <Lightbulb size={48} className="mx-auto text-neutral-medium mb-4 opacity-50" />
+                <h3 className="text-lg font-semibold text-on-surface mb-2">No tips yet</h3>
+                <p className="text-on-surface-secondary mb-6">Create your first daily tip!</p>
+                <button
+                  onClick={() => setIsCreateTipOpen(true)}
+                  className="btn btn-primary inline-flex items-center gap-2"
+                >
+                  <Plus size={20} />
+                  Create First Tip
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -566,12 +495,12 @@ export default function ContentPage() {
           </div>
 
           <div className="flex items-center gap-4 pt-4 border-t border-border">
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
+            <button
+              type="submit"
+              disabled={createTipMutation.isPending}
               className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
+              {createTipMutation.isPending ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   Creating...
@@ -583,11 +512,11 @@ export default function ContentPage() {
                 </>
               )}
             </button>
-            <button 
-              type="button" 
-              onClick={() => setIsCreateTipOpen(false)} 
+            <button
+              type="button"
+              onClick={() => setIsCreateTipOpen(false)}
               className="btn btn-ghost"
-              disabled={isSubmitting}
+              disabled={createTipMutation.isPending}
             >
               Cancel
             </button>
@@ -600,32 +529,13 @@ export default function ContentPage() {
         <ConfirmModal
           isOpen={!!deletingTip}
           onClose={() => setDeletingTip(null)}
-          onConfirm={async () => {
-            setIsSubmitting(true)
-            const supabase = createClient()
-            const { error } = await supabase
-              .from('daily_tips')
-              .delete()
-              .eq('id', deletingTip.id)
-            
-            setIsSubmitting(false)
-            setDeletingTip(null)
-            
-            if (error) {
-              console.error('Error deleting tip:', error)
-              setToast({ message: 'Failed to delete tip', variant: 'error' })
-              setShowToast(true)
-            } else {
-              await fetchData() // Immediate refresh
-              setToast({ message: 'Tip deleted successfully', variant: 'success' })
-              setShowToast(true)
-            }
-          }}
+          onConfirm={handleDeleteTip}
           title="Delete Tip?"
           message={`Are you sure you want to delete "${deletingTip.title}"? This action cannot be undone.`}
-          confirmText={isSubmitting ? 'Deleting...' : 'Delete'}
+          confirmText={deleteTipMutation.isPending ? 'Deleting...' : 'Delete'}
           cancelText="Cancel"
           variant="danger"
+          isLoading={deleteTipMutation.isPending}
         />
       )}
 
@@ -634,32 +544,13 @@ export default function ContentPage() {
         <ConfirmModal
           isOpen={!!deletingPost}
           onClose={() => setDeletingPost(null)}
-          onConfirm={async () => {
-            setIsSubmitting(true)
-            const supabase = createClient()
-            const { error } = await supabase
-              .from('forum_posts')
-              .delete()
-              .eq('id', deletingPost.id)
-            
-            setIsSubmitting(false)
-            setDeletingPost(null)
-            
-            if (error) {
-              console.error('Error deleting post:', error)
-              setToast({ message: 'Failed to delete post', variant: 'error' })
-              setShowToast(true)
-            } else {
-              await fetchData() // Immediate refresh
-              setToast({ message: 'Post deleted successfully', variant: 'success' })
-              setShowToast(true)
-            }
-          }}
+          onConfirm={handleDeletePost}
           title="Delete Forum Post?"
           message={`Are you sure you want to delete "${deletingPost.title}" by ${deletingPost.profiles?.username || 'Anonymous'}? This action cannot be undone.`}
-          confirmText={isSubmitting ? 'Deleting...' : 'Delete Post'}
+          confirmText={deletePostMutation.isPending ? 'Deleting...' : 'Delete Post'}
           cancelText="Cancel"
           variant="danger"
+          isLoading={deletePostMutation.isPending}
         />
       )}
 
@@ -668,12 +559,11 @@ export default function ContentPage() {
         <PostDetailModal
           postId={selectedPostId}
           onClose={() => setSelectedPostId(null)}
-          onPostDeleted={async () => {
-            await fetchData()
+          onPostDeleted={() => {
             setToast({ message: 'Post deleted successfully', variant: 'success' })
             setShowToast(true)
           }}
-          onCommentDeleted={async () => {
+          onCommentDeleted={() => {
             setToast({ message: 'Comment deleted successfully', variant: 'success' })
             setShowToast(true)
           }}

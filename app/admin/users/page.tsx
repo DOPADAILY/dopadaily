@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Users as UsersIcon, ShieldCheck, Shield, Ban, CheckCircle, Search, Eye } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import BackButton from '@/components/BackButton'
@@ -12,38 +13,44 @@ import ConfirmModal from '@/components/ConfirmModal'
 import BanUserModal from '@/components/BanUserModal'
 import UserDetailModal from '@/components/UserDetailModal'
 import Toast from '@/components/Toast'
-import { toggleUserRole, banUser, unbanUser } from './actions'
-import { getAllUsersWithEmails } from './serverActions'
-
-interface Profile {
-  id: string
-  username: string | null
-  email: string
-  role: string
-  is_banned: boolean
-  ban_reason?: string | null
-  banned_until?: string | null
-  created_at: string
-  session_count: number
-  post_count: number
-}
+import {
+  useAdminUsers,
+  useToggleUserRole,
+  useBanUser,
+  useUnbanUser,
+  adminUsersKeys,
+  type AdminUser,
+} from '@/hooks/queries'
 
 export default function UsersPage() {
   const router = useRouter()
-  const [users, setUsers] = useState<Profile[]>([])
-  const [filteredUsers, setFilteredUsers] = useState<Profile[]>([])
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [confirmAction, setConfirmAction] = useState<{
     type: 'promote' | 'demote' | 'unban'
-    user: Profile
+    user: AdminUser
   } | null>(null)
-  const [banningUser, setBanningUser] = useState<Profile | null>(null)
+  const [banningUser, setBanningUser] = useState<AdminUser | null>(null)
   const [viewingUser, setViewingUser] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null)
+
+  // TanStack Query hooks
+  const { data: users = [], isLoading: loading } = useAdminUsers()
+  const toggleRoleMutation = useToggleUserRole()
+  const banMutation = useBanUser()
+  const unbanMutation = useUnbanUser()
+
+  // Filter users with useMemo
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery) return users
+
+    return users.filter(user =>
+      user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }, [searchQuery, users])
 
   useEffect(() => {
     const supabase = createClient()
@@ -72,30 +79,7 @@ export default function UsersPage() {
       setProfile(profileData)
     }
 
-    // Fetch users
-    const fetchUsers = async () => {
-      try {
-        const { profiles, emails, sessionCounts, postCounts } = await getAllUsersWithEmails()
-
-        // Merge data
-        const usersData = profiles.map((p) => ({
-          ...p,
-          email: p.email || (emails && emails[p.id]) || 'N/A',
-          session_count: (sessionCounts && sessionCounts[p.id]) || 0,
-          post_count: (postCounts && postCounts[p.id]) || 0,
-        }))
-
-        setUsers(usersData)
-        setFilteredUsers(usersData)
-      } catch (error) {
-        console.error('Error fetching users:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     checkAuth()
-    fetchUsers()
 
     // Subscribe to real-time updates
     const channel = supabase
@@ -108,7 +92,7 @@ export default function UsersPage() {
           table: 'profiles',
         },
         () => {
-          fetchUsers()
+          queryClient.invalidateQueries({ queryKey: adminUsersKeys.lists() })
         }
       )
       .subscribe()
@@ -116,24 +100,7 @@ export default function UsersPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [router])
-
-  // Filter users based on search
-  useEffect(() => {
-    if (!searchQuery) {
-      setFilteredUsers(users)
-      return
-    }
-
-    const query = searchQuery.toLowerCase()
-    const filtered = users.filter(
-      (u) =>
-        u.username?.toLowerCase().includes(query) ||
-        u.email.toLowerCase().includes(query) ||
-        u.role.toLowerCase().includes(query)
-    )
-    setFilteredUsers(filtered)
-  }, [searchQuery, users])
+  }, [router, queryClient])
 
   if (loading) {
     return (
@@ -375,65 +342,42 @@ export default function UsersPage() {
         <ConfirmModal
           isOpen={!!confirmAction}
           onClose={() => {
-            if (!isSubmitting) {
+            if (!(toggleRoleMutation.isPending || unbanMutation.isPending)) {
               setConfirmAction(null)
             }
           }}
           onConfirm={async () => {
-            setIsSubmitting(true)
-
             try {
-              let result
-
               if (confirmAction.type === 'promote' || confirmAction.type === 'demote') {
-                result = await toggleUserRole(confirmAction.user.id, confirmAction.user.role || 'user')
-              } else if (confirmAction.type === 'unban') {
-                result = await unbanUser(confirmAction.user.id)
-              }
-
-              if (result?.success) {
-                // Show success toast
-                const actionText =
-                  confirmAction.type === 'promote' ? 'promoted to admin' :
-                    confirmAction.type === 'demote' ? 'demoted to user' : 'unbanned'
-
-                setToast({
-                  message: `User ${actionText} successfully`,
-                  variant: 'success'
+                await toggleRoleMutation.mutateAsync({
+                  userId: confirmAction.user.id,
+                  currentRole: confirmAction.user.role
                 })
-
-                // Close modal
-                setConfirmAction(null)
-
-                // Refresh user list
-                const supabase = createClient()
-                const { profiles, emails, sessionCounts, postCounts } = await getAllUsersWithEmails()
-                const usersData = profiles.map((p) => ({
-                  ...p,
-                  email: p.email || (emails && emails[p.id]) || 'N/A',
-                  session_count: (sessionCounts && sessionCounts[p.id]) || 0,
-                  post_count: (postCounts && postCounts[p.id]) || 0,
-                }))
-                setUsers(usersData)
-                setFilteredUsers(usersData)
               } else {
-                // Show error toast
-                setToast({
-                  message: result?.error || 'An error occurred',
-                  variant: 'error'
+                await unbanMutation.mutateAsync({
+                  userId: confirmAction.user.id
                 })
               }
-            } catch (error) {
+
+              const actionText =
+                confirmAction.type === 'promote' ? 'promoted to admin' :
+                  confirmAction.type === 'demote' ? 'demoted to user' : 'unbanned'
+
+              setToast({
+                message: `User ${actionText} successfully`,
+                variant: 'success'
+              })
+
+              setConfirmAction(null)
+            } catch (error: any) {
               console.error('Error performing action:', error)
               setToast({
-                message: 'An unexpected error occurred',
+                message: error?.message || 'An unexpected error occurred',
                 variant: 'error'
               })
-            } finally {
-              setIsSubmitting(false)
             }
           }}
-          isLoading={isSubmitting}
+          isLoading={toggleRoleMutation.isPending || unbanMutation.isPending}
           title={
             confirmAction.type === 'promote'
               ? 'Promote to Admin?'
@@ -467,52 +411,33 @@ export default function UsersPage() {
           isOpen={!!banningUser}
           username={banningUser.username || banningUser.email}
           onClose={() => {
-            if (!isSubmitting) {
+            if (!banMutation.isPending) {
               setBanningUser(null)
             }
           }}
           onConfirm={async (reason, duration) => {
-            setIsSubmitting(true)
-
             try {
-              const result = await banUser(banningUser.id, reason, duration)
+              await banMutation.mutateAsync({
+                userId: banningUser.id,
+                reason,
+                duration
+              })
 
-              if (result?.success) {
-                setToast({
-                  message: `User banned successfully`,
-                  variant: 'success'
-                })
+              setToast({
+                message: `User banned successfully`,
+                variant: 'success'
+              })
 
-                setBanningUser(null)
-
-                // Refresh user list
-                const supabase = createClient()
-                const { profiles, emails, sessionCounts, postCounts } = await getAllUsersWithEmails()
-                const usersData = profiles.map((p) => ({
-                  ...p,
-                  email: p.email || (emails && emails[p.id]) || 'N/A',
-                  session_count: (sessionCounts && sessionCounts[p.id]) || 0,
-                  post_count: (postCounts && postCounts[p.id]) || 0,
-                }))
-                setUsers(usersData)
-                setFilteredUsers(usersData)
-              } else {
-                setToast({
-                  message: result?.error || 'Failed to ban user',
-                  variant: 'error'
-                })
-              }
-            } catch (error) {
+              setBanningUser(null)
+            } catch (error: any) {
               console.error('Error banning user:', error)
               setToast({
-                message: 'An unexpected error occurred',
+                message: error?.message || 'Failed to ban user',
                 variant: 'error'
               })
-            } finally {
-              setIsSubmitting(false)
             }
           }}
-          isLoading={isSubmitting}
+          isLoading={banMutation.isPending}
         />
       )}
 

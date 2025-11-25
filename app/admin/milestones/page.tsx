@@ -4,26 +4,20 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Award } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import MilestonesClient from './MilestonesClient'
-
-interface Milestone {
-    id: number
-    title: string
-    description: string
-    session_threshold: number
-    badge_icon: string
-    badge_color: string
-    is_active: boolean
-}
+import { useAdminMilestones, adminMilestonesKeys } from '@/hooks/queries'
 
 export default function MilestonesPage() {
     const router = useRouter()
-    const [milestones, setMilestones] = useState<Milestone[]>([])
+    const queryClient = useQueryClient()
     const [user, setUser] = useState<any>(null)
     const [profile, setProfile] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
+
+    // TanStack Query hook
+    const { data: milestones = [], isLoading: loading } = useAdminMilestones()
 
     useEffect(() => {
         const supabase = createClient()
@@ -52,23 +46,7 @@ export default function MilestonesPage() {
             setProfile(profileData)
         }
 
-        // Fetch milestones
-        const fetchMilestones = async () => {
-            const { data, error } = await supabase
-                .from('milestones')
-                .select('*')
-                .order('session_threshold', { ascending: true })
-
-            if (error) {
-                console.error('Error fetching milestones:', error)
-            } else {
-                setMilestones(data || [])
-            }
-            setLoading(false)
-        }
-
         checkAuth()
-        fetchMilestones()
 
         // Subscribe to real-time updates
         const channel = supabase
@@ -80,9 +58,8 @@ export default function MilestonesPage() {
                     schema: 'public',
                     table: 'milestones',
                 },
-                (payload) => {
-                    console.log('Milestone change:', payload)
-                    fetchMilestones() // Refetch on any change
+                () => {
+                    queryClient.invalidateQueries({ queryKey: adminMilestonesKeys.lists() })
                 }
             )
             .subscribe()
@@ -90,7 +67,7 @@ export default function MilestonesPage() {
         return () => {
             supabase.removeChannel(channel)
         }
-    }, [router])
+    }, [router, queryClient])
 
     if (loading) {
         return (
