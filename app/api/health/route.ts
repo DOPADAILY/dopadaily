@@ -22,7 +22,7 @@ export async function GET() {
 
         return NextResponse.json({
             status: 'ok',
-            message: 'Calm Focus is healthy',
+            message: 'Dopadaily is healthy',
             timestamp: new Date().toISOString(),
             data: data ? 'Database connection active' : 'No data found'
         })

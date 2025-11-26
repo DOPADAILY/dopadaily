@@ -81,7 +81,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
           <Brain size={20} className="text-on-primary" />
         </div>
         <span className="text-lg font-bold text-on-surface">
-          Calm Focus
+          Dopadaily
         </span>
       </div>
 

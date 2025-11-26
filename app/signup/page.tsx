@@ -287,7 +287,7 @@ function SignupContent() {
                                 <Brain size={20} className="text-white" />
                             </div>
                             <p className="text-[18px] font-extrabold leading-[28px] text-white">
-                                Calm Focus
+                                Dopadaily
                             </p>
                         </div>
 
@@ -316,7 +316,7 @@ function SignupContent() {
                         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                             <Brain size={20} className="text-on-primary" />
                         </div>
-                        <span className="text-lg font-bold text-on-surface">Calm Focus</span>
+                        <span className="text-lg font-bold text-on-surface">Dopadaily</span>
                     </div>
                 </div>
 

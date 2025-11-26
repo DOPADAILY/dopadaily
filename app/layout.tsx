@@ -20,7 +20,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Calm Focus",
+  title: "Dopadaily",
   description: "A therapeutic productivity app for focus and mental wellness",
 };
 

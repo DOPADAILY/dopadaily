@@ -82,7 +82,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: 'Calm Focus <reminders@yourdomain.com>',
+            from: 'Dopadaily <reminders@yourdomain.com>',
             to: [email],
             subject: `Reminder: ${reminder.title}`,
             html: `
@@ -234,7 +234,7 @@ Improve the email HTML in the Edge Function:
 <body>
   <div class="container">
     <div class="header">
-      <h1>🔔 Reminder from Calm Focus</h1>
+      <h1>🔔 Reminder from Dopadaily</h1>
     </div>
     <div class="content">
       <h2>${reminder.title}</h2>
@@ -245,7 +245,7 @@ Improve the email HTML in the Edge Function:
       </a>
     </div>
     <div class="footer">
-      <p>You're receiving this because you created a reminder in Calm Focus</p>
+      <p>You're receiving this because you created a reminder in Dopadaily</p>
       <p><a href="https://yourapp.com/settings">Manage notification preferences</a></p>
     </div>
   </div>

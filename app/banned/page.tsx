@@ -45,7 +45,7 @@ export default async function BannedPage() {
 
           {/* Message */}
           <p className="text-on-surface-secondary mb-6">
-            Your account has been suspended by our moderation team. You no longer have access to Calm Focus.
+            Your account has been suspended by our moderation team. You no longer have access to Dopadaily.
           </p>
 
           {/* Ban Reason */}
@@ -99,8 +99,8 @@ export default async function BannedPage() {
           {/* Contact */}
           <p className="text-sm text-on-surface-secondary mb-6">
             If you believe this is a mistake, please contact us at{' '}
-            <a 
-              href="mailto:support@calmfocus.com" 
+            <a
+              href="mailto:support@calmfocus.com"
               className="text-primary hover:underline"
             >
               support@calmfocus.com
