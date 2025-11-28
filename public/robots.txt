@@ -1,0 +1,19 @@
+# Dopadaily Robots.txt
+# https://dopadaily.com
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://dopadaily.com/sitemap.xml
+
+# Disallow admin and API routes
+Disallow: /admin
+Disallow: /api/
+Disallow: /auth/
+
+# Allow crawling of static assets
+Allow: /og-image.png
+Allow: /twitter-image.png
+Allow: /*.svg$
+Allow: /*.png$

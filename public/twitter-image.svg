@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600">
+  <defs>
+    <linearGradient id="tw-bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e9ddcf"/>
+      <stop offset="100%" style="stop-color:#f5efe7"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="600" fill="url(#tw-bg-gradient)"/>
+  
+  <!-- Left side - Icon -->
+  <g transform="translate(200, 150)">
+    <rect width="180" height="180" rx="36" fill="#b89c86"/>
+    <g transform="translate(22, 22) scale(5.67)" color="#ffffff">
+      
+  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M12 5.5v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+    </g>
+  </g>
+  
+  <!-- Right side - Text -->
+  <text x="500" y="240" font-family="Montserrat, system-ui, sans-serif" font-size="64" font-weight="700" fill="#2b231e">
+    Dopadaily
+  </text>
+  <text x="500" y="300" font-family="DM Sans, system-ui, sans-serif" font-size="24" font-weight="400" fill="#5a4d45">
+    A therapeutic productivity app for
+  </text>
+  <text x="500" y="340" font-family="DM Sans, system-ui, sans-serif" font-size="24" font-weight="400" fill="#5a4d45">
+    focus and mental wellness
+  </text>
+  
+  <!-- Decorative elements -->
+  <circle cx="1050" cy="450" r="100" fill="#cbb7c9" opacity="0.3"/>
+  <rect x="0" y="580" width="1200" height="20" fill="#b89c86"/>
+</svg>

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <!-- Gradient background -->
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e9ddcf"/>
+      <stop offset="50%" style="stop-color:#f5efe7"/>
+      <stop offset="100%" style="stop-color:#e9ddcf"/>
+    </linearGradient>
+    <!-- Decorative pattern -->
+    <pattern id="dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="20" cy="20" r="2" fill="#b89c86" opacity="0.15"/>
+    </pattern>
+    <!-- Glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="20" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg-gradient)"/>
+  <rect width="1200" height="630" fill="url(#dots)"/>
+  
+  <!-- Decorative circles -->
+  <circle cx="100" cy="530" r="200" fill="#cbb7c9" opacity="0.2"/>
+  <circle cx="1100" cy="100" r="150" fill="#b89c86" opacity="0.15"/>
+  
+  <!-- Logo container -->
+  <g transform="translate(500, 180)">
+    <!-- Icon background with glow -->
+    <rect x="0" y="0" width="200" height="200" rx="40" fill="#b89c86" filter="url(#glow)"/>
+    <!-- Brain icon -->
+    <g transform="translate(25, 25) scale(6.25)" color="#ffffff">
+      
+  <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M12 5.5v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+    </g>
+  </g>
+  
+  <!-- Text -->
+  <text x="600" y="450" text-anchor="middle" font-family="Montserrat, system-ui, sans-serif" font-size="72" font-weight="700" fill="#2b231e">
+    Dopadaily
+  </text>
+  <text x="600" y="510" text-anchor="middle" font-family="DM Sans, system-ui, sans-serif" font-size="28" font-weight="400" fill="#5a4d45">
+    Focus • Wellness • Productivity
+  </text>
+  
+  <!-- Bottom accent bar -->
+  <rect x="0" y="610" width="1200" height="20" fill="#b89c86"/>
+</svg>
