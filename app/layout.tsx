@@ -23,7 +23,7 @@ const dmSans = DM_Sans({
 const siteConfig = {
   name: "Dopadaily",
   description: "A therapeutic productivity app for focus and mental wellness. Build healthy habits, track your progress, and join a supportive community.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "https://dopadaily.org",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://app.dopadaily.org",
   ogImage: "/og-image.png",
   twitterImage: "/twitter-image.png",
   creator: "@dopadaily",
