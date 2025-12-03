@@ -62,6 +62,46 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
                 <ReminderNotifications userId={userId} />
             </div>
 
+            {/* Mobile: Today's Focus Sessions at top */}
+            <div className="xl:hidden mb-6">
+                <div className="card">
+                    <div className="flex items-center gap-2 mb-6">
+                        <Clock size={20} className="text-primary" />
+                        <h2 className="text-xl font-semibold text-on-surface">Today's Focus Sessions</h2>
+                    </div>
+
+                    {recentSessions.length > 0 ? (
+                        <div className="space-y-4">
+                            {recentSessions.map((session, index) => {
+                                const completedTime = new Date(session.completed_at)
+                                const durationMinutes = session.duration_minutes
+
+                                return (
+                                    <div key={`mobile-${index}`} className="p-4 bg-backplate rounded-lg border border-border">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="font-medium text-on-surface">Focus Session</span>
+                                            <span className="text-xs text-on-surface-secondary">
+                                                {completedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-on-surface-secondary">{durationMinutes} minutes completed ✓</div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12">
+                            <Clock size={48} className="mx-auto text-neutral-medium mb-4 opacity-50" />
+                            <p className="text-on-surface-secondary mb-4">No focus sessions today yet</p>
+                            <Link href="/focus" className="btn btn-primary inline-flex items-center gap-2">
+                                <Brain size={18} />
+                                Start Your First Session
+                            </Link>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-8">
                 <StatCard
@@ -134,8 +174,8 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
 
             {/* Today's Schedule & Progress */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
-                {/* Today's Sessions */}
-                <div className="xl:col-span-2 card">
+                {/* Today's Sessions - Hidden on mobile (shown above), visible on desktop */}
+                <div className="hidden xl:block xl:col-span-2 card">
                     <div className="flex items-center gap-2 mb-6">
                         <Clock size={20} className="text-primary" />
                         <h2 className="text-xl font-semibold text-on-surface">Today's Focus Sessions</h2>
