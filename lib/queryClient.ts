@@ -5,7 +5,29 @@ import { createClient } from '@/utils/supabase/client'
 // Flag to prevent multiple redirects
 let isRedirecting = false
 
+// Check if error is a network error (DNS, connection, etc.)
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase()
+    return (
+      message.includes('fetch failed') ||
+      message.includes('network') ||
+      message.includes('enotfound') ||
+      message.includes('econnrefused') ||
+      message.includes('econnreset') ||
+      message.includes('etimedout')
+    )
+  }
+  return false
+}
+
 async function handleGlobalError(error: unknown) {
+  // Ignore network errors - don't redirect, just fail silently
+  if (isNetworkError(error)) {
+    console.warn('Network error detected, skipping redirect:', error)
+    return
+  }
+
   // Only handle session errors and prevent multiple redirects
   if (isSessionError(error) && !isRedirecting && typeof window !== 'undefined') {
     isRedirecting = true
@@ -34,20 +56,24 @@ export function makeQueryClient() {
       queries: {
         // Data stays fresh for 5 minutes
         staleTime: 5 * 60 * 1000,
-        // Keep unused data in cache for 10 minutes
-        gcTime: 10 * 60 * 1000,
-        // Refetch when window regains focus
-        refetchOnWindowFocus: true,
+        // Keep unused data in cache for 30 minutes
+        gcTime: 30 * 60 * 1000,
+        // Don't refetch on every window focus (reduces network spam)
+        refetchOnWindowFocus: false,
         // Refetch when network reconnects
         refetchOnReconnect: true,
-        // Don't retry on session errors
+        // Use cached data when offline
+        networkMode: 'offlineFirst',
+        // Don't retry on session errors, limit retries on network errors
         retry: (failureCount, error) => {
           // Don't retry session errors
           if (isSessionError(error)) return false
-          // Retry other errors once
-          return failureCount < 1
+          // Limit retries on network errors
+          if (isNetworkError(error)) return failureCount < 2
+          // Retry other errors twice
+          return failureCount < 2
         },
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
       },
       mutations: {
         // Don't retry mutations to avoid duplicates

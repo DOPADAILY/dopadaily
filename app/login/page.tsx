@@ -16,12 +16,21 @@ function LoginContent() {
   const [isLoading, setIsLoading] = useState(false)
 
   // Check if user is already logged in
+  // Only redirect if we can VERIFY the session (not just read from cookies)
   useEffect(() => {
     const checkSession = async () => {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        router.replace('/dashboard')
+      try {
+        const supabase = createClient()
+        // Use getUser() to actually verify with server, not just read cookies
+        const { data: { user }, error } = await supabase.auth.getUser()
+
+        // Only redirect if we have a verified user AND no errors
+        if (user && !error) {
+          router.replace('/dashboard')
+        }
+      } catch (err) {
+        // Network error - don't redirect, stay on login page
+        console.warn('[Login] Network error checking session, staying on login page')
       }
     }
     checkSession()

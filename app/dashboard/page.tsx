@@ -8,11 +8,33 @@ import DashboardClient from './DashboardClient'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
 
   // Don't redirect if there's a network issue - show error state instead
   const { cookies } = await import('next/headers')
-  const networkIssue = (await cookies()).get('network-issue')?.value === 'true'
+  const cookieStore = await cookies()
+  let networkIssue = cookieStore.get('network-issue')?.value === 'true'
+
+  let user = null
+  try {
+    const { data, error: authError } = await supabase.auth.getUser()
+    user = data?.user || null
+
+    // Check if auth error is network-related
+    if (authError) {
+      const msg = authError.message || ''
+      if (msg.includes('fetch failed') || msg.includes('ENOTFOUND')) {
+        networkIssue = true
+      }
+    }
+  } catch (error: any) {
+    // Network error thrown as exception
+    const msg = error?.message || error?.cause?.message || ''
+    if (msg.includes('fetch failed') || msg.includes('ENOTFOUND') || error?.cause?.code === 'ENOTFOUND') {
+      networkIssue = true
+    } else {
+      console.error('[Dashboard] Unexpected auth error:', error)
+    }
+  }
 
   if (!user && !networkIssue) {
     redirect('/login')

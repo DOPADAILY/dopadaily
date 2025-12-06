@@ -133,7 +133,27 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/banned', request.url))
       }
     }
-  } catch (error) {
+  } catch (error: any) {
+    // CRITICAL: If it's a network error (ENOTFOUND, fetch failed, etc.), 
+    // allow the request to continue - don't break the app
+    const errorMessage = error?.message || error?.cause?.message || ''
+    const isNetwork =
+      errorMessage.includes('fetch failed') ||
+      errorMessage.includes('ENOTFOUND') ||
+      errorMessage.includes('ECONNREFUSED') ||
+      errorMessage.includes('ETIMEDOUT') ||
+      error?.cause?.code === 'ENOTFOUND'
+
+    if (isNetwork) {
+      console.warn('[Middleware] Network error caught, allowing request to continue:', errorMessage)
+      response.cookies.set('network-issue', 'true', {
+        maxAge: 60,
+        httpOnly: true,
+        sameSite: 'lax'
+      })
+      return response
+    }
+
     console.error('[Middleware] Unexpected error:', error)
   }
 

@@ -3,15 +3,16 @@
 import { useState } from 'react'
 import {
   FileText, Trash2, Plus, X, Edit2, Pin, PinOff, Search,
-  Lightbulb, Target, Brain, Sparkles, BookOpen, Loader2
+  Lightbulb, Target, Brain, Sparkles, BookOpen, Loader2, Crown
 } from 'lucide-react'
-import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useTogglePin } from '@/hooks/queries'
+import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useTogglePin, useFeatureLimit } from '@/hooks/queries'
 import { Note, NoteCategory, NoteColor } from './actions'
 import EmptyState from '@/components/EmptyState'
 import Toast from '@/components/Toast'
 import ConfirmModal from '@/components/ConfirmModal'
 import Select from '@/components/Select'
 import { NotesSkeleton } from '@/components/SkeletonLoader'
+import UpgradePrompt from '@/components/UpgradePrompt'
 
 const categoryOptions = [
   { value: 'all', label: 'All Notes' },
@@ -51,6 +52,7 @@ export default function NotesClient() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [filterCategory, setFilterCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   // TanStack Query hooks
   const { data: notes = [], isLoading, error } = useNotes()
@@ -58,6 +60,9 @@ export default function NotesClient() {
   const updateNote = useUpdateNote()
   const deleteNoteMutation = useDeleteNote()
   const togglePin = useTogglePin()
+
+  // Subscription check for notes limit
+  const { isAtLimit, remaining, isPremium } = useFeatureLimit('maxNotes', notes.length)
 
   // Filter and sort notes
   const filteredNotes = notes
@@ -382,6 +387,25 @@ export default function NotesClient() {
 
   return (
     <>
+      {/* Upgrade Banner for Free Users at Limit */}
+      {isAtLimit && !isPremium && (
+        <UpgradePrompt
+          feature="Unlimited Notes"
+          description={`You've reached the limit of 5 notes. Upgrade to Premium for unlimited notes.`}
+          variant="banner"
+        />
+      )}
+
+      {/* Notes Remaining Counter for Free Users */}
+      {!isPremium && !isAtLimit && remaining > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-surface-elevated rounded-lg border border-border">
+          <Crown size={16} className="text-primary" />
+          <span className="text-sm text-on-surface-secondary">
+            {remaining} note{remaining !== 1 ? 's' : ''} remaining on Free plan
+          </span>
+        </div>
+      )}
+
       {/* Filters & Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
         <div className="w-full sm:flex-1 flex items-center gap-2 px-3 h-10 bg-surface-elevated border border-border rounded-lg focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
@@ -402,7 +426,13 @@ export default function NotesClient() {
             className="flex-1 sm:flex-none sm:w-40"
           />
           <button
-            onClick={() => setIsCreateOpen(true)}
+            onClick={() => {
+              if (isAtLimit && !isPremium) {
+                setShowUpgradeModal(true)
+              } else {
+                setIsCreateOpen(true)
+              }
+            }}
             className="btn btn-primary shrink-0"
           >
             <Plus size={18} />
@@ -587,6 +617,16 @@ export default function NotesClient() {
         variant={toast?.type || 'success'}
         onClose={() => setToast(null)}
       />
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <UpgradePrompt
+          feature="Unlimited Notes"
+          description="You've reached the limit of 5 notes on the Free plan. Upgrade to Premium for unlimited notes with all colors and categories."
+          variant="modal"
+          onClose={() => setShowUpgradeModal(false)}
+        />
+      )}
     </>
   )
 }

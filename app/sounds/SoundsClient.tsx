@@ -1,15 +1,19 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { Music, Play, Search, Headphones, Waves, Sparkles, WifiOff } from 'lucide-react'
+import { Music, Play, Search, Headphones, Waves, Sparkles, WifiOff, Lock, Crown } from 'lucide-react'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import Select from '@/components/Select'
 import MusicPlayerModal from '@/components/MusicPlayerModal'
 import EmptyState from '@/components/EmptyState'
 import { useAudioStore } from '@/stores/audioStore'
-import { useSounds, useIncrementPlayCount, AmbientSound } from '@/hooks/queries'
+import { useSounds, useIncrementPlayCount, AmbientSound, useIsPremium } from '@/hooks/queries'
 import { SoundsSkeleton } from '@/components/SkeletonLoader'
+import UpgradePrompt from '@/components/UpgradePrompt'
+
+// Number of free sounds available to free users
+const FREE_SOUNDS_LIMIT = 3
 
 interface SoundsClientProps {
   user: any
@@ -39,12 +43,16 @@ const categoryOptions = [
 export default function SoundsClient({ user, profile }: SoundsClientProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState('')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const { loadSound, isModalOpen, closeModal } = useAudioStore()
-  
+
   // TanStack Query hooks
   const { data: sounds = [], isLoading, error } = useSounds()
   const incrementPlayCount = useIncrementPlayCount()
+
+  // Subscription check
+  const { isPremium } = useIsPremium()
 
   // Filter sounds
   const filteredSounds = useMemo(() => {
@@ -64,7 +72,19 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
     return filtered
   }, [searchQuery, filterCategory, sounds])
 
+  // Separate free and premium sounds for non-premium users
+  const freeSounds = useMemo(() => sounds.slice(0, FREE_SOUNDS_LIMIT), [sounds])
+  const isSoundFree = (soundId: string) => {
+    return freeSounds.some(s => s.id === soundId)
+  }
+
   const handlePlaySound = (sound: AmbientSound) => {
+    // Check if user can play this sound
+    if (!isPremium && !isSoundFree(sound.id)) {
+      setShowUpgradeModal(true)
+      return
+    }
+
     loadSound(sound)
     // Increment play count
     incrementPlayCount.mutate({ soundId: sound.id, currentCount: sound.play_count })
@@ -198,6 +218,20 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
           </div>
         </div>
 
+        {/* Free User Banner */}
+        {!isPremium && sounds.length > FREE_SOUNDS_LIMIT && (
+          <div className="mb-6 p-4 bg-linear-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-xl">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <Crown className="w-5 h-5 text-primary" />
+                <span className="text-sm text-on-surface">
+                  <strong>{FREE_SOUNDS_LIMIT} free sounds</strong> available. Upgrade to Premium for the full library of {sounds.length} sounds.
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Sounds Grid */}
         {filteredSounds.length === 0 ? (
           <div className="text-center py-20 card">
@@ -217,12 +251,24 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSounds.map((sound) => {
               const CategoryIcon = getCategoryIcon(sound.category)
+              const isLocked = !isPremium && !isSoundFree(sound.id)
+
               return (
                 <div
                   key={sound.id}
-                  className="group card hover:border-primary/30 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer"
+                  className={`group card hover:border-primary/30 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer relative ${isLocked ? 'opacity-75' : ''}`}
                   onClick={() => handlePlaySound(sound)}
                 >
+                  {/* Premium Lock Overlay */}
+                  {isLocked && (
+                    <div className="absolute top-3 right-3 z-20">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-surface/90 backdrop-blur-sm text-xs font-medium text-on-surface-secondary rounded-full border border-border">
+                        <Lock size={12} />
+                        Premium
+                      </span>
+                    </div>
+                  )}
+
                   {/* Sound Image with Gradient */}
                   <div className={`relative aspect-video bg-linear-to-br ${getCategoryGradient(sound.category)} rounded-xl mb-4 flex items-center justify-center overflow-hidden`}>
                     {/* Background pattern */}
@@ -236,15 +282,23 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
                     {/* Icon */}
                     <div className="relative z-10 transform group-hover:scale-110 transition-transform duration-300">
                       <div className="p-5 rounded-full bg-surface/60 backdrop-blur-sm shadow-lg">
-                        <CategoryIcon size={40} className="text-primary" />
+                        {isLocked ? (
+                          <Lock size={40} className="text-on-surface-secondary" />
+                        ) : (
+                          <CategoryIcon size={40} className="text-primary" />
+                        )}
                       </div>
                     </div>
 
                     {/* Hover overlay */}
                     <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-300 flex items-center justify-center">
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="p-4 rounded-full bg-primary shadow-lg">
-                          <Play size={24} className="text-white ml-0.5" />
+                        <div className={`p-4 rounded-full shadow-lg ${isLocked ? 'bg-on-surface-secondary' : 'bg-primary'}`}>
+                          {isLocked ? (
+                            <Lock size={24} className="text-white" />
+                          ) : (
+                            <Play size={24} className="text-white ml-0.5" />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -260,7 +314,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
                   {/* Sound Info */}
                   <div className="space-y-3">
                     <div>
-                      <h3 className="text-xl font-bold text-on-surface mb-2 group-hover:text-primary transition-colors">
+                      <h3 className={`text-xl font-bold mb-2 transition-colors ${isLocked ? 'text-on-surface-secondary' : 'text-on-surface group-hover:text-primary'}`}>
                         {sound.title}
                       </h3>
                       {sound.description && (
@@ -321,6 +375,16 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
 
       {/* Music Player Modal */}
       <MusicPlayerModal />
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <UpgradePrompt
+          feature="Full Sound Library"
+          description={`Free users can access ${FREE_SOUNDS_LIMIT} sounds. Upgrade to Premium for unlimited access to all ${sounds.length} ambient sounds.`}
+          variant="modal"
+          onClose={() => setShowUpgradeModal(false)}
+        />
+      )}
     </div>
   )
 }

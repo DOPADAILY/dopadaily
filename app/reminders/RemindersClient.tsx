@@ -1,19 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, Trash2, Calendar, Plus, Clock, X, Edit2, Loader2 } from 'lucide-react'
-import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder, Reminder } from '@/hooks/queries'
+import { Bell, Trash2, Calendar, Plus, Clock, X, Edit2, Loader2, Crown } from 'lucide-react'
+import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder, Reminder, useFeatureLimit } from '@/hooks/queries'
 import EmptyState from '@/components/EmptyState'
 import Toast from '@/components/Toast'
 import ConfirmModal from '@/components/ConfirmModal'
 import { RemindersSkeleton } from '@/components/SkeletonLoader'
+import UpgradePrompt from '@/components/UpgradePrompt'
 
 interface RemindersClientProps {
   userId: string
   isAdmin: boolean
 }
 
-export default function RemindersClient({ 
+export default function RemindersClient({
   userId,
   isAdmin
 }: RemindersClientProps) {
@@ -21,6 +22,7 @@ export default function RemindersClient({
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
   const [deletingReminder, setDeletingReminder] = useState<Reminder | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   // TanStack Query hooks
   const { data, isLoading, error } = useReminders()
@@ -30,6 +32,10 @@ export default function RemindersClient({
 
   const upcomingReminders = data?.upcoming || []
   const pastReminders = data?.past || []
+
+  // Count only user's own reminders (not global ones)
+  const userRemindersCount = upcomingReminders.filter(r => r.created_by === userId && !r.is_global).length
+  const { isAtLimit, remaining, isPremium } = useFeatureLimit('maxReminders', userRemindersCount)
 
   const handleCreateReminder = async (formData: FormData) => {
     const title = formData.get('title') as string
@@ -88,11 +94,11 @@ export default function RemindersClient({
     const now = new Date()
     const target = new Date(remindAt)
     const diff = target.getTime() - now.getTime()
-    
+
     const minutes = Math.floor(diff / (1000 * 60))
     const hours = Math.floor(diff / (1000 * 60 * 60))
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    
+
     if (minutes < 0) return { text: 'Overdue', urgency: 'overdue' }
     if (minutes < 60) return { text: `in ${minutes}m`, urgency: 'urgent' }
     if (hours < 24) return { text: `in ${hours}h`, urgency: 'soon' }
@@ -134,6 +140,25 @@ export default function RemindersClient({
 
   return (
     <>
+      {/* Upgrade Banner for Free Users at Limit */}
+      {isAtLimit && !isPremium && (
+        <UpgradePrompt
+          feature="Unlimited Reminders"
+          description={`You've reached the limit of 3 reminders. Upgrade to Premium for unlimited reminders.`}
+          variant="banner"
+        />
+      )}
+
+      {/* Reminders Remaining Counter for Free Users */}
+      {!isPremium && !isAtLimit && remaining > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-surface-elevated rounded-lg border border-border">
+          <Crown size={16} className="text-primary" />
+          <span className="text-sm text-on-surface-secondary">
+            {remaining} reminder{remaining !== 1 ? 's' : ''} remaining on Free plan
+          </span>
+        </div>
+      )}
+
       {/* Upcoming Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -144,10 +169,16 @@ export default function RemindersClient({
               {upcomingReminders.length}
             </span>
           </div>
-          
+
           {/* Mobile Create Button */}
           <button
-            onClick={() => setIsCreateOpen(true)}
+            onClick={() => {
+              if (isAtLimit && !isPremium) {
+                setShowUpgradeModal(true)
+              } else {
+                setIsCreateOpen(true)
+              }
+            }}
             className="xl:hidden btn btn-primary text-sm px-3 py-2"
           >
             <Plus size={18} />
@@ -176,7 +207,7 @@ export default function RemindersClient({
           <div className="space-y-3">
             {upcomingReminders.map((reminder) => {
               const { text: timeText, urgency } = getTimeUntil(reminder.remind_at)
-              
+
               return (
                 <div key={reminder.id} className="group card hover:border-primary transition-all">
                   <div className="flex items-start justify-between gap-3">
@@ -302,7 +333,7 @@ export default function RemindersClient({
             {/* Form */}
             <form action={handleUpdateReminder} className="p-6 space-y-5">
               <input type="hidden" name="id" value={editingReminder.id} />
-              
+
               <div>
                 <label className="block text-sm font-semibold text-on-surface mb-2">Title</label>
                 <input
@@ -487,6 +518,16 @@ export default function RemindersClient({
         variant={toast?.type || 'success'}
         onClose={() => setToast(null)}
       />
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <UpgradePrompt
+          feature="Unlimited Reminders"
+          description="You've reached the limit of 3 reminders on the Free plan. Upgrade to Premium for unlimited reminders."
+          variant="modal"
+          onClose={() => setShowUpgradeModal(false)}
+        />
+      )}
     </>
   )
 }
