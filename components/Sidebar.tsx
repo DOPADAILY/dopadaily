@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck, Award, Headphones, FileText, Crown } from 'lucide-react'
+import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck, Award, Headphones, FileText, Crown, Settings } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { isSessionError, handleSessionError } from '@/utils/errorHandling'
@@ -139,7 +139,18 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
       </nav>
 
       {/* User Section */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-1">
+        <Link
+          href="/settings"
+          onClick={handleNavClick}
+          className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${isActive('/settings')
+            ? 'bg-primary text-on-primary shadow-sm'
+            : 'text-on-surface-secondary hover:bg-backplate hover:text-on-surface'
+          }`}
+        >
+          <Settings size={20} />
+          Settings
+        </Link>
         <button
           onClick={handleLogout}
           className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-on-surface-secondary hover:bg-backplate hover:text-on-surface transition-all cursor-pointer"
