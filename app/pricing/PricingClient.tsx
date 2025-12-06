@@ -93,7 +93,8 @@ export default function PricingClient({
   const [isLoading, setIsLoading] = useState(false)
   const [loadingAction, setLoadingAction] = useState<'checkout' | 'portal' | null>(null)
 
-  const isPremium = currentPlan === 'premium' && subscriptionStatus === 'active'
+  // Check for both 'active' and 'trialing' statuses (per stripe-config.ts)
+  const isPremium = currentPlan === 'premium' && (subscriptionStatus === 'active' || subscriptionStatus === 'trialing')
 
   const handleUpgrade = async () => {
     setIsLoading(true)

@@ -19,17 +19,31 @@ export default async function DashboardPage() {
     const { data, error: authError } = await supabase.auth.getUser()
     user = data?.user || null
 
-    // Check if auth error is network-related
+    // Check if auth error is network-related (match all errors handled by middleware)
     if (authError) {
       const msg = authError.message || ''
-      if (msg.includes('fetch failed') || msg.includes('ENOTFOUND')) {
+      if (
+        msg.includes('fetch failed') ||
+        msg.includes('ENOTFOUND') ||
+        msg.includes('ECONNREFUSED') ||
+        msg.includes('ETIMEDOUT')
+      ) {
         networkIssue = true
       }
     }
   } catch (error: any) {
-    // Network error thrown as exception
+    // Network error thrown as exception (match all errors handled by middleware)
     const msg = error?.message || error?.cause?.message || ''
-    if (msg.includes('fetch failed') || msg.includes('ENOTFOUND') || error?.cause?.code === 'ENOTFOUND') {
+    const code = error?.cause?.code
+    if (
+      msg.includes('fetch failed') ||
+      msg.includes('ENOTFOUND') ||
+      msg.includes('ECONNREFUSED') ||
+      msg.includes('ETIMEDOUT') ||
+      code === 'ENOTFOUND' ||
+      code === 'ECONNREFUSED' ||
+      code === 'ETIMEDOUT'
+    ) {
       networkIssue = true
     } else {
       console.error('[Dashboard] Unexpected auth error:', error)

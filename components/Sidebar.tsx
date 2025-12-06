@@ -42,7 +42,9 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
         }
 
         setIsAdmin(profile?.role === 'admin')
-        setIsPremium(profile?.subscription_plan === 'premium' && profile?.subscription_status === 'active')
+        // Check for both 'active' and 'trialing' statuses (per stripe-config.ts)
+        const status = profile?.subscription_status
+        setIsPremium(profile?.subscription_plan === 'premium' && (status === 'active' || status === 'trialing'))
       }
     }
     checkUserStatus()

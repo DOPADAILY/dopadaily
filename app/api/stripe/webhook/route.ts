@@ -220,7 +220,16 @@ function mapStripeStatus(
     case 'unpaid':
     case 'incomplete_expired':
       return 'canceled'
+    // Handle 'incomplete' - payment not yet confirmed, treat as pending (not premium)
+    case 'incomplete':
+      return 'free'
+    // Handle 'paused' - subscription paused but still exists, treat as canceled
+    // User can resume via billing portal
+    case 'paused':
+      return 'canceled'
     default:
+      // Log unexpected status for debugging
+      console.warn(`[Webhook] Unhandled Stripe subscription status: ${stripeStatus}`)
       return 'free'
   }
 }

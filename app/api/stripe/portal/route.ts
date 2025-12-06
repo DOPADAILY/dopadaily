@@ -31,6 +31,15 @@ export async function POST(request: NextRequest) {
       return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/settings`,
     })
 
+    // Validate session URL exists
+    if (!session.url) {
+      console.error('Billing portal session created but URL is null')
+      return NextResponse.json(
+        { error: 'Failed to create portal URL' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({ url: session.url })
   } catch (error) {
     console.error('Billing portal error:', error)

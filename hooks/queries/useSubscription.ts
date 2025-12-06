@@ -164,6 +164,10 @@ export async function redirectToCheckout() {
       throw new Error(error)
     }
 
+    if (!url) {
+      throw new Error('No checkout URL returned')
+    }
+
     window.location.href = url
   } catch (error) {
     console.error('Checkout error:', error)
@@ -183,6 +187,10 @@ export async function redirectToPortal() {
 
     if (error) {
       throw new Error(error)
+    }
+
+    if (!url) {
+      throw new Error('No portal URL returned')
     }
 
     window.location.href = url

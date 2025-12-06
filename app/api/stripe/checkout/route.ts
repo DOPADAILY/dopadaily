@@ -30,11 +30,25 @@ export async function POST(request: NextRequest) {
       })
       customerId = customer.id
 
-      // Save customer ID to profile
-      await supabase
+      // Save customer ID to profile - must succeed before creating checkout
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ stripe_customer_id: customerId })
         .eq('id', user.id)
+
+      if (updateError) {
+        console.error('Failed to save Stripe customer ID to database:', updateError)
+        // Clean up: delete the Stripe customer since we couldn't save the reference
+        try {
+          await stripe.customers.del(customerId)
+        } catch (deleteError) {
+          console.error('Failed to cleanup Stripe customer after database error:', deleteError)
+        }
+        return NextResponse.json(
+          { error: 'Failed to set up billing account' },
+          { status: 500 }
+        )
+      }
     }
 
     // Get the price ID from environment
@@ -69,6 +83,15 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Validate session URL exists
+    if (!session.url) {
+      console.error('Stripe session created but URL is null')
+      return NextResponse.json(
+        { error: 'Failed to create checkout URL' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({ url: session.url })
   } catch (error) {
