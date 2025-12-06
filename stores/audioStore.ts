@@ -13,21 +13,22 @@ interface AmbientSound {
 interface AudioState {
   // Current sound
   currentSound: AmbientSound | null
-  
+
   // Audio element reference
   audio: HTMLAudioElement | null
-  
+
   // Playback state
   isPlaying: boolean
+  isLoading: boolean
   currentTime: number
   duration: number
   volume: number
   isMuted: boolean
   isLooping: boolean
-  
+
   // Modal state
   isModalOpen: boolean
-  
+
   // Actions
   loadSound: (sound: AmbientSound) => void
   play: () => void
@@ -48,6 +49,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
   currentSound: null,
   audio: null,
   isPlaying: false,
+  isLoading: false,
   currentTime: 0,
   duration: 0,
   volume: 0.7,
@@ -57,12 +59,27 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
   loadSound: (sound: AmbientSound) => {
     const state = get()
-    
-    // Clean up existing audio
+
+    // Clean up existing audio - remove event listeners first
     if (state.audio) {
+      state.audio.onloadedmetadata = null
+      state.audio.oncanplaythrough = null
+      state.audio.onended = null
+      state.audio.ontimeupdate = null
+      state.audio.onerror = null
       state.audio.pause()
       state.audio.src = ''
     }
+
+    // Set loading state immediately
+    set({
+      currentSound: sound,
+      isLoading: true,
+      isPlaying: false,
+      currentTime: 0,
+      duration: 0,
+      isModalOpen: true
+    })
 
     // Create new audio element
     const audio = new Audio(sound.file_url)
@@ -70,28 +87,34 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     audio.loop = state.isLooping
 
     // Set up event listeners
-    audio.addEventListener('loadedmetadata', () => {
+    audio.onloadedmetadata = () => {
       set({ duration: audio.duration })
-    })
+    }
 
-    audio.addEventListener('ended', () => {
+    audio.oncanplaythrough = () => {
+      set({ isLoading: false, audio })
+    }
+
+    audio.onended = () => {
       if (!get().isLooping) {
         set({ isPlaying: false })
       }
-    })
+    }
 
-    audio.addEventListener('timeupdate', () => {
+    audio.ontimeupdate = () => {
       set({ currentTime: audio.currentTime })
-    })
+    }
 
-    set({
-      currentSound: sound,
-      audio,
-      isPlaying: false,
-      currentTime: 0,
-      duration: 0,
-      isModalOpen: true
-    })
+    audio.onerror = () => {
+      console.error('Failed to load audio')
+      set({ isLoading: false, isPlaying: false })
+    }
+
+    // Start loading
+    audio.load()
+
+    // Store audio reference
+    set({ audio })
   },
 
   play: () => {
@@ -176,6 +199,12 @@ export const useAudioStore = create<AudioState>((set, get) => ({
   cleanup: () => {
     const { audio } = get()
     if (audio) {
+      // Remove event listeners first
+      audio.onloadedmetadata = null
+      audio.oncanplaythrough = null
+      audio.onended = null
+      audio.ontimeupdate = null
+      audio.onerror = null
       audio.pause()
       audio.src = ''
     }
@@ -183,6 +212,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       currentSound: null,
       audio: null,
       isPlaying: false,
+      isLoading: false,
       currentTime: 0,
       duration: 0,
       isModalOpen: false

@@ -146,7 +146,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
           className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${isActive('/settings')
             ? 'bg-primary text-on-primary shadow-sm'
             : 'text-on-surface-secondary hover:bg-backplate hover:text-on-surface'
-          }`}
+            }`}
         >
           <Settings size={20} />
           Settings

@@ -29,6 +29,7 @@ const CATEGORIES = [
   'rain',
   'ocean',
   'forest',
+  '8d_audio',
   'other'
 ]
 
@@ -100,6 +101,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
       rain: Waves,
       ocean: Waves,
       forest: Sparkles,
+      '8d_audio': Headphones,
       other: Music
     }
     return icons[category] || Music
@@ -115,6 +117,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
       rain: 'from-indigo-500/20 via-blue-500/10 to-violet-500/20',
       ocean: 'from-cyan-500/20 via-teal-500/10 to-blue-500/20',
       forest: 'from-green-600/20 via-lime-500/10 to-emerald-500/20',
+      '8d_audio': 'from-violet-500/20 via-purple-500/10 to-indigo-500/20',
       other: 'from-primary/20 via-secondary/10 to-primary/20'
     }
     return gradients[category] || gradients.other

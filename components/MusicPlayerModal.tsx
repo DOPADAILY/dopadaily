@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Play, Pause, Volume2, VolumeX, Music, Repeat, Maximize2, Minimize2 } from 'lucide-react'
+import { X, Play, Pause, Volume2, VolumeX, Music, Repeat, Maximize2, Minimize2, Loader2 } from 'lucide-react'
 import { useAudioStore } from '@/stores/audioStore'
 
 export default function MusicPlayerModal() {
@@ -10,6 +10,7 @@ export default function MusicPlayerModal() {
     const {
         currentSound,
         isPlaying,
+        isLoading,
         currentTime,
         duration,
         volume,
@@ -54,6 +55,7 @@ export default function MusicPlayerModal() {
             rain: 'from-indigo-500/20 to-blue-500/20',
             ocean: 'from-cyan-500/20 to-teal-500/20',
             forest: 'from-green-600/20 to-lime-500/20',
+            '8d_audio': 'from-violet-500/20 to-purple-500/20',
             other: 'from-primary/20 to-secondary/20'
         }
         return colors[category] || colors.other
@@ -68,8 +70,17 @@ export default function MusicPlayerModal() {
                 {/* Header */}
                 <div className="relative px-6 pt-6 pb-4 border-b border-border/50">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-                            {isPlaying ? 'Now Playing' : 'Ready to Play'}
+                        <span className="text-xs font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+                            {isLoading ? (
+                                <>
+                                    <Loader2 size={12} className="animate-spin" />
+                                    Loading...
+                                </>
+                            ) : isPlaying ? (
+                                'Now Playing'
+                            ) : (
+                                'Ready to Play'
+                            )}
                         </span>
                         <div className="flex items-center gap-1">
                             <button
@@ -153,11 +164,16 @@ export default function MusicPlayerModal() {
                 {/* Progress Bar */}
                 <div className="px-6 py-3">
                     <div className="relative w-full h-2 bg-backplate rounded-full overflow-hidden">
-                        {/* Progress fill */}
-                        <div
-                            className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-100"
-                            style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
-                        />
+                        {isLoading ? (
+                            /* Spotify-like loading shimmer */
+                            <div className="absolute inset-0 animate-shimmer" />
+                        ) : (
+                            /* Progress fill */
+                            <div
+                                className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-100"
+                                style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                            />
+                        )}
                         {/* Slider input (invisible but interactive) */}
                         <input
                             type="range"
@@ -165,12 +181,13 @@ export default function MusicPlayerModal() {
                             max={duration || 100}
                             value={currentTime}
                             onChange={handleSeek}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            disabled={isLoading}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-wait"
                         />
                     </div>
                     <div className="flex items-center justify-between mt-2 text-xs text-on-surface-secondary">
-                        <span>{formatTime(currentTime)}</span>
-                        <span>{formatTime(duration)}</span>
+                        <span>{isLoading ? '—' : formatTime(currentTime)}</span>
+                        <span>{isLoading ? 'Loading...' : formatTime(duration)}</span>
                     </div>
                 </div>
 
@@ -194,9 +211,16 @@ export default function MusicPlayerModal() {
                     {/* Play/Pause button */}
                     <button
                         onClick={togglePlayPause}
-                        className="p-5 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95"
+                        disabled={isLoading}
+                        className="p-5 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-wait disabled:hover:scale-100"
                     >
-                        {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-1" />}
+                        {isLoading ? (
+                            <Loader2 size={28} className="animate-spin" />
+                        ) : isPlaying ? (
+                            <Pause size={28} />
+                        ) : (
+                            <Play size={28} className="ml-1" />
+                        )}
                     </button>
 
                     {/* Volume control */}

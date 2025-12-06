@@ -189,6 +189,47 @@ async function toggleSoundActive(input: ToggleSoundActiveInput): Promise<void> {
         })
 }
 
+// Update sound details
+interface UpdateSoundInput {
+    id: string
+    title: string
+    description: string | null
+    category: string
+    is_active: boolean
+    admin_id: string
+}
+
+async function updateSound(input: UpdateSoundInput): Promise<AdminSound> {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+        .from('ambient_sounds')
+        .update({
+            title: input.title,
+            description: input.description,
+            category: input.category,
+            is_active: input.is_active,
+        })
+        .eq('id', input.id)
+        .select()
+        .single()
+
+    if (error) throw error
+
+    // Log admin activity
+    await supabase
+        .from('admin_audit_log')
+        .insert({
+            admin_id: input.admin_id,
+            action: 'updated',
+            target_table: 'ambient_sounds',
+            target_id: input.id,
+            details: `Updated sound details: ${input.title}`
+        })
+
+    return data
+}
+
 // Query hooks
 export function useAdminSounds() {
     return useQuery({
@@ -250,6 +291,39 @@ export function useToggleSoundActive() {
         },
         onError: (_err, _input, context) => {
             // Rollback on error
+            if (context?.previousSounds) {
+                queryClient.setQueryData(adminSoundsKeys.lists(), context.previousSounds)
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: adminSoundsKeys.lists() })
+        },
+    })
+}
+
+export function useUpdateSound() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: updateSound,
+        onMutate: async (input) => {
+            await queryClient.cancelQueries({ queryKey: adminSoundsKeys.lists() })
+            const previousSounds = queryClient.getQueryData<AdminSound[]>(adminSoundsKeys.lists())
+
+            if (previousSounds) {
+                queryClient.setQueryData<AdminSound[]>(
+                    adminSoundsKeys.lists(),
+                    previousSounds.map(sound =>
+                        sound.id === input.id
+                            ? { ...sound, title: input.title, description: input.description, category: input.category, is_active: input.is_active }
+                            : sound
+                    )
+                )
+            }
+
+            return { previousSounds }
+        },
+        onError: (_err, _input, context) => {
             if (context?.previousSounds) {
                 queryClient.setQueryData(adminSoundsKeys.lists(), context.previousSounds)
             }

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Music, Upload, Trash2, Play, Pause, Plus, Search, Filter, Sparkles, Waves } from 'lucide-react'
+import { Music, Upload, Trash2, Play, Pause, Plus, Search, Sparkles, Waves, Headphones, Edit2, X, Clock, HardDrive, BarChart3, Volume2, Loader2 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/UserMenu'
@@ -14,6 +14,7 @@ import Toast from '@/components/Toast'
 import {
     useAdminSounds,
     useUploadSound,
+    useUpdateSound,
     useDeleteSound,
     useToggleSoundActive,
     adminSoundsKeys,
@@ -29,6 +30,7 @@ const CATEGORIES = [
     'rain',
     'ocean',
     'forest',
+    '8d_audio',
     'other'
 ]
 
@@ -45,6 +47,9 @@ const formCategoryOptions = CATEGORIES.map(cat => ({
     label: cat.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
 }))
 
+// Audio player state type
+type AudioState = 'idle' | 'loading' | 'playing' | 'paused'
+
 export default function AdminSoundsPage() {
     const router = useRouter()
     const queryClient = useQueryClient()
@@ -53,25 +58,40 @@ export default function AdminSoundsPage() {
     const [currentUser, setCurrentUser] = useState<any>(null)
     const [profile, setProfile] = useState<any>(null)
     const [isCreateOpen, setIsCreateOpen] = useState(false)
-    const [playingId, setPlayingId] = useState<string | null>(null)
-    const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
+    const [editingSound, setEditingSound] = useState<AdminSound | null>(null)
     const [deletingSound, setDeletingSound] = useState<AdminSound | null>(null)
-    const [uploadProgress, setUploadProgress] = useState(0)
     const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null)
+
+    // Audio player state
+    const [playingId, setPlayingId] = useState<string | null>(null)
+    const [audioState, setAudioState] = useState<AudioState>('idle')
+    const [currentTime, setCurrentTime] = useState(0)
+    const [duration, setDuration] = useState(0)
+    const audioRef = useRef<HTMLAudioElement | null>(null)
+    const progressInterval = useRef<NodeJS.Timeout | null>(null)
 
     // TanStack Query hooks
     const { data: sounds = [], isLoading: loading } = useAdminSounds()
     const uploadMutation = useUploadSound()
+    const updateMutation = useUpdateSound()
     const deleteMutation = useDeleteSound()
     const toggleActiveMutation = useToggleSoundActive()
 
-    // Form state
-    const [formData, setFormData] = useState({
+    // Upload form state
+    const [uploadForm, setUploadForm] = useState({
         title: '',
         description: '',
         category: 'nature',
         is_active: true,
         file: null as File | null
+    })
+
+    // Edit form state
+    const [editForm, setEditForm] = useState({
+        title: '',
+        description: '',
+        category: '',
+        is_active: true
     })
 
     // Filter sounds with useMemo
@@ -130,56 +150,73 @@ export default function AdminSoundsPage() {
 
         return () => {
             supabase.removeChannel(channel)
-            if (audioElement) {
-                audioElement.pause()
-                audioElement.src = ''
-            }
+            cleanupAudio()
         }
-    }, [router, queryClient, audioElement])
+    }, [router, queryClient])
+
+    // Cleanup audio on unmount
+    const cleanupAudio = (keepState = false) => {
+        if (audioRef.current) {
+            // Remove all event listeners before cleanup to prevent error callbacks
+            audioRef.current.onloadedmetadata = null
+            audioRef.current.oncanplaythrough = null
+            audioRef.current.onended = null
+            audioRef.current.onerror = null
+            audioRef.current.pause()
+            audioRef.current.src = ''
+            audioRef.current = null
+        }
+        if (progressInterval.current) {
+            clearInterval(progressInterval.current)
+            progressInterval.current = null
+        }
+        if (!keepState) {
+            setPlayingId(null)
+            setAudioState('idle')
+            setCurrentTime(0)
+            setDuration(0)
+        }
+    }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            // Validate file type
             const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/aac']
             if (!validTypes.includes(file.type)) {
                 setToast({ message: 'Please upload a valid audio file (MP3, WAV, OGG, WebM, AAC)', variant: 'error' })
                 return
             }
 
-            // Validate file size (50MB)
             if (file.size > 50 * 1024 * 1024) {
                 setToast({ message: 'File size must be less than 50MB', variant: 'error' })
                 return
             }
 
-            setFormData({ ...formData, file })
+            setUploadForm({ ...uploadForm, file })
         }
     }
 
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        if (!formData.file || !formData.title) {
+        if (!uploadForm.file || !uploadForm.title) {
             setToast({ message: 'Please fill in all required fields', variant: 'error' })
             return
         }
 
-        setUploadProgress(0)
-
         try {
             await uploadMutation.mutateAsync({
-                title: formData.title,
-                description: formData.description,
-                category: formData.category,
-                is_active: formData.is_active,
-                file: formData.file,
+                title: uploadForm.title,
+                description: uploadForm.description,
+                category: uploadForm.category,
+                is_active: uploadForm.is_active,
+                file: uploadForm.file,
                 created_by: currentUser?.id
             })
 
             setToast({ message: 'Sound uploaded successfully!', variant: 'success' })
             setIsCreateOpen(false)
-            setFormData({
+            setUploadForm({
                 title: '',
                 description: '',
                 category: 'nature',
@@ -189,8 +226,42 @@ export default function AdminSoundsPage() {
         } catch (error: any) {
             console.error('Error uploading sound:', error)
             setToast({ message: error.message || 'Failed to upload sound', variant: 'error' })
-        } finally {
-            setUploadProgress(0)
+        }
+    }
+
+    const handleEdit = (sound: AdminSound) => {
+        setEditingSound(sound)
+        setEditForm({
+            title: sound.title,
+            description: sound.description || '',
+            category: sound.category,
+            is_active: sound.is_active
+        })
+    }
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (!editingSound || !editForm.title) {
+            setToast({ message: 'Title is required', variant: 'error' })
+            return
+        }
+
+        try {
+            await updateMutation.mutateAsync({
+                id: editingSound.id,
+                title: editForm.title,
+                description: editForm.description || null,
+                category: editForm.category,
+                is_active: editForm.is_active,
+                admin_id: currentUser?.id
+            })
+
+            setToast({ message: 'Sound updated successfully!', variant: 'success' })
+            setEditingSound(null)
+        } catch (error: any) {
+            console.error('Error updating sound:', error)
+            setToast({ message: error.message || 'Failed to update sound', variant: 'error' })
         }
     }
 
@@ -205,6 +276,11 @@ export default function AdminSoundsPage() {
                 admin_id: currentUser?.id
             })
 
+            // Stop playing if this sound is playing
+            if (playingId === deletingSound.id) {
+                cleanupAudio()
+            }
+
             setToast({ message: 'Sound deleted successfully', variant: 'success' })
             setDeletingSound(null)
         } catch (error: any) {
@@ -214,24 +290,50 @@ export default function AdminSoundsPage() {
     }
 
     const togglePlay = (sound: AdminSound) => {
+        // If clicking the same sound that's playing
         if (playingId === sound.id) {
-            audioElement?.pause()
-            setPlayingId(null)
-        } else {
-            if (audioElement) {
-                audioElement.pause()
+            if (audioState === 'playing') {
+                audioRef.current?.pause()
+                setAudioState('paused')
+            } else if (audioState === 'paused') {
+                audioRef.current?.play()
+                setAudioState('playing')
             }
-
-            const audio = new Audio(sound.file_url)
-            audio.volume = 0.5
-            audio.play()
-            setAudioElement(audio)
-            setPlayingId(sound.id)
-
-            audio.onended = () => {
-                setPlayingId(null)
-            }
+            return
         }
+
+        // Playing a new sound
+        cleanupAudio()
+        setPlayingId(sound.id)
+        setAudioState('loading')
+
+        const audio = new Audio(sound.file_url)
+        audioRef.current = audio
+        audio.volume = 0.5
+
+        audio.onloadedmetadata = () => {
+            setDuration(audio.duration)
+        }
+
+        audio.oncanplaythrough = () => {
+            setAudioState('playing')
+            audio.play()
+            // Update progress
+            progressInterval.current = setInterval(() => {
+                setCurrentTime(audio.currentTime)
+            }, 100)
+        }
+
+        audio.onended = () => {
+            cleanupAudio()
+        }
+
+        audio.onerror = () => {
+            setToast({ message: 'Failed to load audio', variant: 'error' })
+            cleanupAudio()
+        }
+
+        audio.load()
     }
 
     const toggleActive = async (sound: AdminSound) => {
@@ -251,16 +353,20 @@ export default function AdminSoundsPage() {
     }
 
     const formatFileSize = (bytes: number | null) => {
-        if (!bytes) return 'Unknown'
+        if (!bytes) return '—'
         const mb = bytes / (1024 * 1024)
-        return `${mb.toFixed(2)} MB`
+        return `${mb.toFixed(1)} MB`
     }
 
     const formatDuration = (seconds: number | null) => {
-        if (!seconds) return 'Unknown'
+        if (!seconds) return '—'
         const mins = Math.floor(seconds / 60)
-        const secs = seconds % 60
+        const secs = Math.floor(seconds % 60)
         return `${mins}:${secs.toString().padStart(2, '0')}`
+    }
+
+    const formatCategory = (category: string) => {
+        return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
     }
 
     const getCategoryIcon = (category: string) => {
@@ -273,25 +379,30 @@ export default function AdminSoundsPage() {
             rain: Waves,
             ocean: Waves,
             forest: Sparkles,
+            '8d_audio': Headphones,
             other: Music
         }
         return icons[category] || Music
     }
 
-    const getCategoryGradient = (category: string) => {
-        const gradients: { [key: string]: string } = {
-            nature: 'from-green-500/20 via-emerald-500/10 to-lime-500/20',
-            white_noise: 'from-gray-500/20 via-slate-500/10 to-zinc-500/20',
-            binaural: 'from-purple-500/20 via-pink-500/10 to-fuchsia-500/20',
-            lofi: 'from-orange-500/20 via-red-500/10 to-rose-500/20',
-            meditation: 'from-blue-500/20 via-cyan-500/10 to-sky-500/20',
-            rain: 'from-indigo-500/20 via-blue-500/10 to-violet-500/20',
-            ocean: 'from-cyan-500/20 via-teal-500/10 to-blue-500/20',
-            forest: 'from-green-600/20 via-lime-500/10 to-emerald-500/20',
-            other: 'from-primary/20 via-secondary/10 to-primary/20'
-        }
-        return gradients[category] || gradients.other
-    }
+    // Skeleton loader for sound items
+    const SoundRowSkeleton = () => (
+        <div className="bg-surface border border-border rounded-xl p-4 animate-pulse">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-backplate rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-backplate rounded w-1/3" />
+                    <div className="h-3 bg-backplate rounded w-1/2" />
+                </div>
+                <div className="hidden md:flex items-center gap-6">
+                    <div className="h-6 w-20 bg-backplate rounded-full" />
+                    <div className="h-4 w-12 bg-backplate rounded" />
+                    <div className="h-4 w-12 bg-backplate rounded" />
+                    <div className="h-4 w-16 bg-backplate rounded" />
+                </div>
+            </div>
+        </div>
+    )
 
     if (loading) {
         return (
@@ -307,13 +418,11 @@ export default function AdminSoundsPage() {
                         </div>
                     </div>
                 </header>
-                <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
-                    <div className="card">
-                        <div className="animate-pulse space-y-4 p-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="h-20 bg-backplate rounded"></div>
-                            ))}
-                        </div>
+                <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12 max-w-6xl">
+                    <div className="space-y-3">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <SoundRowSkeleton key={i} />
+                        ))}
                     </div>
                 </div>
             </div>
@@ -339,15 +448,15 @@ export default function AdminSoundsPage() {
                 </div>
             </header>
 
-            <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
+            <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12 max-w-6xl">
                 {/* Header Section */}
-                <div className="mb-8">
+                <div className="mb-6">
                     <BackButton />
                     <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <h2 className="text-2xl sm:text-3xl font-bold text-on-surface mb-2">Sound Library</h2>
-                            <p className="text-on-surface-secondary">
-                                Manage ambient sounds for users • {filteredSounds.length} total
+                            <h2 className="text-2xl sm:text-3xl font-bold text-on-surface mb-1">Sound Library</h2>
+                            <p className="text-on-surface-secondary text-sm">
+                                Manage ambient sounds • {sounds.length} total
                             </p>
                         </div>
                         <button
@@ -361,7 +470,7 @@ export default function AdminSoundsPage() {
                 </div>
 
                 {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
                     <div className="relative flex-1">
                         <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-medium" />
                         <input
@@ -369,16 +478,15 @@ export default function AdminSoundsPage() {
                             placeholder="Search sounds..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-surface-elevated text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-surface-elevated text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                         />
                     </div>
-
-                    <div className="sm:w-56">
+                    <div className="sm:w-48">
                         <Select
                             value={filterCategory}
                             onChange={(value) => setFilterCategory(value)}
                             options={categoryOptions}
-                            placeholder="Filter by category"
+                            placeholder="All Categories"
                         />
                     </div>
                 </div>
@@ -409,96 +517,196 @@ export default function AdminSoundsPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {filteredSounds.map((sound) => (
-                            <div
-                                key={sound.id}
-                                className="group card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative overflow-hidden"
-                            >
-                                {/* Subtle gradient background */}
-                                <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="space-y-2">
+                        {/* Desktop Table Header */}
+                        <div className="hidden lg:grid lg:grid-cols-12 gap-4 px-4 py-2 text-xs font-medium text-on-surface-secondary uppercase tracking-wide">
+                            <div className="col-span-5">Sound</div>
+                            <div className="col-span-2">Category</div>
+                            <div className="col-span-1 text-center">Duration</div>
+                            <div className="col-span-1 text-center">Size</div>
+                            <div className="col-span-1 text-center">Plays</div>
+                            <div className="col-span-1 text-center">Status</div>
+                            <div className="col-span-1 text-right">Actions</div>
+                        </div>
 
-                                <div className="relative flex items-start gap-4">
-                                    {/* Play Button with Animation */}
-                                    <button
-                                        onClick={() => togglePlay(sound)}
-                                        className="flex-0 p-4 rounded-full bg-linear-to-br from-primary/20 to-secondary/20 hover:from-primary/30 hover:to-secondary/30 flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-primary/20 hover:scale-105"
-                                    >
-                                        {playingId === sound.id ? (
-                                            <div className="relative">
-                                                <Pause size={22} className="text-primary relative z-10" />
-                                                <div className="absolute inset-0 bg-primary/30 rounded-full animate-ping"></div>
-                                            </div>
-                                        ) : (
-                                            <Play size={22} className="text-primary ml-0.5" />
-                                        )}
-                                    </button>
+                        {/* Sound Rows */}
+                        {filteredSounds.map((sound) => {
+                            const CategoryIcon = getCategoryIcon(sound.category)
+                            const isCurrentSound = playingId === sound.id
+                            const isLoading = isCurrentSound && audioState === 'loading'
+                            const isPlaying = isCurrentSound && audioState === 'playing'
 
-                                    {/* Sound Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-3 mb-3">
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="text-lg font-bold text-on-surface truncate group-hover:text-primary transition-colors">
+                            return (
+                                <div
+                                    key={sound.id}
+                                    className={`group bg-surface border rounded-xl transition-all duration-200 hover:border-primary/30 hover:shadow-md ${isCurrentSound ? 'border-primary/50 shadow-md' : 'border-border'}`}
+                                >
+                                    {/* Main Row */}
+                                    <div className="p-4 lg:grid lg:grid-cols-12 lg:gap-4 lg:items-center">
+                                        {/* Sound Info - Mobile & Desktop */}
+                                        <div className="col-span-5 flex items-center gap-3 mb-3 lg:mb-0">
+                                            {/* Play Button */}
+                                            <button
+                                                onClick={() => togglePlay(sound)}
+                                                disabled={isLoading}
+                                                className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${isCurrentSound
+                                                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                                                    : 'bg-backplate text-on-surface-secondary hover:bg-primary/20 hover:text-primary'
+                                                    } ${isLoading ? 'cursor-wait' : ''}`}
+                                            >
+                                                {isLoading ? (
+                                                    <Loader2 size={22} className="animate-spin" />
+                                                ) : isPlaying ? (
+                                                    <Pause size={22} />
+                                                ) : (
+                                                    <Play size={22} className="ml-0.5" />
+                                                )}
+                                            </button>
+
+                                            {/* Title & Description */}
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
                                                     {sound.title}
                                                 </h3>
                                                 {sound.description && (
-                                                    <p className="text-sm text-on-surface-secondary line-clamp-2 mt-1">
+                                                    <p className="text-sm text-on-surface-secondary truncate">
                                                         {sound.description}
                                                     </p>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2 flex-0">
-                                                <label className="relative flex items-center gap-2 cursor-pointer group/toggle">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={sound.is_active}
-                                                        onChange={() => toggleActive(sound)}
-                                                        className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary transition-all"
-                                                    />
-                                                    <span className={`text-xs font-medium transition-colors ${sound.is_active ? 'text-success' : 'text-on-surface-secondary'}`}>
-                                                        {sound.is_active ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </label>
-                                                <button
-                                                    onClick={() => setDeletingSound(sound)}
-                                                    className="p-2 text-error hover:bg-error/10 rounded-lg transition-all hover:scale-110"
-                                                    title="Delete sound"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
                                         </div>
 
-                                        {/* Metadata with Icons */}
-                                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-linear-to-r from-primary/15 to-primary/10 text-primary rounded-full font-semibold">
-                                                <Music size={12} />
-                                                {sound.category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                                            </span>
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-backplate rounded-full text-on-surface-secondary">
-                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                {formatDuration(sound.duration)}
-                                            </span>
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-backplate rounded-full text-on-surface-secondary">
-                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                                </svg>
-                                                {formatFileSize(sound.file_size)}
-                                            </span>
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-backplate rounded-full text-on-surface-secondary">
-                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                {sound.play_count} plays
+                                        {/* Category */}
+                                        <div className="col-span-2 hidden lg:flex items-center gap-2">
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+                                                <CategoryIcon size={12} />
+                                                {formatCategory(sound.category)}
                                             </span>
                                         </div>
+
+                                        {/* Duration */}
+                                        <div className="col-span-1 hidden lg:flex justify-center items-center gap-1 text-sm text-on-surface-secondary">
+                                            <Clock size={14} />
+                                            {formatDuration(sound.duration)}
+                                        </div>
+
+                                        {/* Size */}
+                                        <div className="col-span-1 hidden lg:flex justify-center items-center gap-1 text-sm text-on-surface-secondary">
+                                            <HardDrive size={14} />
+                                            {formatFileSize(sound.file_size)}
+                                        </div>
+
+                                        {/* Plays */}
+                                        <div className="col-span-1 hidden lg:flex justify-center items-center gap-1 text-sm text-on-surface-secondary">
+                                            <BarChart3 size={14} />
+                                            {sound.play_count}
+                                        </div>
+
+                                        {/* Status Toggle */}
+                                        <div className="col-span-1 hidden lg:flex justify-center">
+                                            <button
+                                                onClick={() => toggleActive(sound)}
+                                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${sound.is_active
+                                                    ? 'bg-success/10 text-success hover:bg-success/20'
+                                                    : 'bg-neutral-medium/10 text-on-surface-secondary hover:bg-neutral-medium/20'
+                                                    }`}
+                                            >
+                                                {sound.is_active ? 'Active' : 'Inactive'}
+                                            </button>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="col-span-1 hidden lg:flex justify-end items-center gap-1">
+                                            <button
+                                                onClick={() => handleEdit(sound)}
+                                                className="p-2 text-on-surface-secondary hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                                                title="Edit sound"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setDeletingSound(sound)}
+                                                className="p-2 text-on-surface-secondary hover:text-error hover:bg-error/10 rounded-lg transition-all"
+                                                title="Delete sound"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+
+                                        {/* Mobile: Metadata Row */}
+                                        <div className="lg:hidden flex flex-wrap items-center gap-2 mt-3 text-xs">
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
+                                                <CategoryIcon size={12} />
+                                                {formatCategory(sound.category)}
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-backplate rounded-full text-on-surface-secondary">
+                                                <Clock size={12} />
+                                                {formatDuration(sound.duration)}
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-backplate rounded-full text-on-surface-secondary">
+                                                <BarChart3 size={12} />
+                                                {sound.play_count} plays
+                                            </span>
+                                            <button
+                                                onClick={() => toggleActive(sound)}
+                                                className={`px-2 py-1 rounded-full font-medium ${sound.is_active
+                                                    ? 'bg-success/10 text-success'
+                                                    : 'bg-neutral-medium/10 text-on-surface-secondary'
+                                                    }`}
+                                            >
+                                                {sound.is_active ? 'Active' : 'Inactive'}
+                                            </button>
+                                            <div className="flex-1" />
+                                            <button
+                                                onClick={() => handleEdit(sound)}
+                                                className="p-1.5 text-on-surface-secondary hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setDeletingSound(sound)}
+                                                className="p-1.5 text-on-surface-secondary hover:text-error hover:bg-error/10 rounded-lg transition-all"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </div>
+
+                                    {/* Audio Progress Bar (Spotify-style) */}
+                                    {isCurrentSound && (
+                                        <div className="px-4 pb-4">
+                                            <div className="flex items-center gap-3">
+                                                <Volume2 size={16} className="text-primary shrink-0" />
+                                                <div className="flex-1 relative">
+                                                    {/* Background track */}
+                                                    <div className="h-1.5 bg-backplate rounded-full overflow-hidden">
+                                                        {isLoading ? (
+                                                            // Spotify-like loading skeleton
+                                                            <div className="h-full w-full relative overflow-hidden">
+                                                                <div className="absolute inset-0 animate-shimmer" />
+                                                            </div>
+                                                        ) : (
+                                                            // Progress bar
+                                                            <div
+                                                                className="h-full bg-primary transition-all duration-100 rounded-full"
+                                                                style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <span className="text-xs text-on-surface-secondary tabular-nums w-20 text-right">
+                                                    {isLoading ? (
+                                                        'Loading...'
+                                                    ) : (
+                                                        `${formatDuration(currentTime)} / ${formatDuration(duration)}`
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 )}
             </div>
@@ -506,7 +714,7 @@ export default function AdminSoundsPage() {
             {/* Upload Modal */}
             {isCreateOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-surface rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-surface rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
                         <div className="sticky top-0 bg-surface border-b border-border px-6 py-4 flex items-center justify-between">
                             <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
                                 <Upload size={24} className="text-primary" />
@@ -517,66 +725,58 @@ export default function AdminSoundsPage() {
                                 disabled={uploadMutation.isPending}
                                 className="p-2 hover:bg-backplate rounded-lg transition-colors disabled:opacity-50"
                             >
-                                <Music size={20} />
+                                <X size={20} />
                             </button>
                         </div>
 
                         <form onSubmit={handleUpload} className="p-6 space-y-4">
-                            {/* Title */}
                             <div>
-                                <label htmlFor="title" className="block text-sm font-semibold text-on-surface mb-2">
+                                <label className="block text-sm font-semibold text-on-surface mb-2">
                                     Title *
                                 </label>
                                 <input
                                     type="text"
-                                    id="title"
                                     required
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="e.g., Ocean Waves, Rain Forest, White Noise"
+                                    value={uploadForm.title}
+                                    onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
+                                    placeholder="e.g., Ocean Waves, Rain Forest"
                                     className="w-full px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                     disabled={uploadMutation.isPending}
                                 />
                             </div>
 
-                            {/* Description */}
                             <div>
-                                <label htmlFor="description" className="block text-sm font-semibold text-on-surface mb-2">
+                                <label className="block text-sm font-semibold text-on-surface mb-2">
                                     Description
                                 </label>
                                 <textarea
-                                    id="description"
                                     rows={3}
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    value={uploadForm.description}
+                                    onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
                                     placeholder="Describe the sound..."
                                     className="w-full px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y"
                                     disabled={uploadMutation.isPending}
                                 />
                             </div>
 
-                            {/* Category */}
                             <div>
-                                <label htmlFor="category" className="block text-sm font-semibold text-on-surface mb-2">
+                                <label className="block text-sm font-semibold text-on-surface mb-2">
                                     Category *
                                 </label>
                                 <Select
-                                    id="category"
-                                    value={formData.category}
-                                    onChange={(value) => setFormData({ ...formData, category: value })}
+                                    value={uploadForm.category}
+                                    onChange={(value) => setUploadForm({ ...uploadForm, category: value })}
                                     options={formCategoryOptions}
                                     disabled={uploadMutation.isPending}
                                 />
                             </div>
 
-                            {/* File Upload */}
                             <div>
-                                <label htmlFor="file" className="block text-sm font-semibold text-on-surface mb-2">
+                                <label className="block text-sm font-semibold text-on-surface mb-2">
                                     Audio File *
                                 </label>
                                 <input
                                     type="file"
-                                    id="file"
                                     accept="audio/*"
                                     required
                                     onChange={handleFileChange}
@@ -584,46 +784,41 @@ export default function AdminSoundsPage() {
                                     disabled={uploadMutation.isPending}
                                 />
                                 <p className="text-xs text-on-surface-secondary mt-1">
-                                    Supported: MP3, WAV, OGG, WebM, AAC (Max 50MB)
+                                    MP3, WAV, OGG, WebM, AAC (Max 50MB)
                                 </p>
-                                {formData.file && (
+                                {uploadForm.file && (
                                     <p className="text-xs text-success mt-1">
-                                        Selected: {formData.file.name} ({formatFileSize(formData.file.size)})
+                                        ✓ {uploadForm.file.name} ({formatFileSize(uploadForm.file.size)})
                                     </p>
                                 )}
                             </div>
 
-                            {/* Active Toggle */}
-                            <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                     type="checkbox"
-                                    id="is_active"
-                                    checked={formData.is_active}
-                                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                                    checked={uploadForm.is_active}
+                                    onChange={(e) => setUploadForm({ ...uploadForm, is_active: e.target.checked })}
                                     className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
                                     disabled={uploadMutation.isPending}
                                 />
-                                <label htmlFor="is_active" className="text-sm text-on-surface">
-                                    Make sound active immediately
-                                </label>
-                            </div>
+                                <span className="text-sm text-on-surface">Make active immediately</span>
+                            </label>
 
-                            {/* Actions */}
                             <div className="flex items-center gap-3 pt-4 border-t border-border">
                                 <button
                                     type="submit"
-                                    disabled={uploadMutation.isPending || !formData.file}
+                                    disabled={uploadMutation.isPending || !uploadForm.file}
                                     className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {uploadMutation.isPending ? (
                                         <>
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                            <Loader2 size={18} className="animate-spin" />
                                             Uploading...
                                         </>
                                     ) : (
                                         <>
                                             <Upload size={18} />
-                                            Upload Sound
+                                            Upload
                                         </>
                                     )}
                                 </button>
@@ -631,6 +826,125 @@ export default function AdminSoundsPage() {
                                     type="button"
                                     onClick={() => setIsCreateOpen(false)}
                                     disabled={uploadMutation.isPending}
+                                    className="btn btn-ghost disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editingSound && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-surface rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-surface border-b border-border px-6 py-4 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-on-surface flex items-center gap-2">
+                                <Edit2 size={24} className="text-primary" />
+                                Edit Sound
+                            </h2>
+                            <button
+                                onClick={() => !updateMutation.isPending && setEditingSound(null)}
+                                disabled={updateMutation.isPending}
+                                className="p-2 hover:bg-backplate rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleUpdate} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-on-surface mb-2">
+                                    Title *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editForm.title}
+                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                    placeholder="Sound title"
+                                    className="w-full px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                    disabled={updateMutation.isPending}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-on-surface mb-2">
+                                    Description
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={editForm.description}
+                                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                    placeholder="Describe the sound..."
+                                    className="w-full px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y"
+                                    disabled={updateMutation.isPending}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-on-surface mb-2">
+                                    Category *
+                                </label>
+                                <Select
+                                    value={editForm.category}
+                                    onChange={(value) => setEditForm({ ...editForm, category: value })}
+                                    options={formCategoryOptions}
+                                    disabled={updateMutation.isPending}
+                                />
+                            </div>
+
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={editForm.is_active}
+                                    onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })}
+                                    className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
+                                    disabled={updateMutation.isPending}
+                                />
+                                <span className="text-sm text-on-surface">Active</span>
+                            </label>
+
+                            {/* File info (read-only) */}
+                            <div className="p-3 bg-backplate rounded-lg">
+                                <p className="text-xs text-on-surface-secondary mb-2 font-medium">File Info</p>
+                                <div className="flex flex-wrap gap-3 text-sm">
+                                    <span className="flex items-center gap-1 text-on-surface">
+                                        <Clock size={14} className="text-on-surface-secondary" />
+                                        {formatDuration(editingSound.duration)}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-on-surface">
+                                        <HardDrive size={14} className="text-on-surface-secondary" />
+                                        {formatFileSize(editingSound.file_size)}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-on-surface">
+                                        <BarChart3 size={14} className="text-on-surface-secondary" />
+                                        {editingSound.play_count} plays
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 pt-4 border-t border-border">
+                                <button
+                                    type="submit"
+                                    disabled={updateMutation.isPending}
+                                    className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {updateMutation.isPending ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        'Save Changes'
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingSound(null)}
+                                    disabled={updateMutation.isPending}
                                     className="btn btn-ghost disabled:opacity-50"
                                 >
                                     Cancel
@@ -665,4 +979,3 @@ export default function AdminSoundsPage() {
         </div>
     )
 }
-

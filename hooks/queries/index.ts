@@ -79,6 +79,7 @@ export type { DailyTip, AdminForumPost, AdminComment } from './useAdminContent'
 export {
   useAdminSounds,
   useUploadSound,
+  useUpdateSound,
   useDeleteSound,
   useToggleSoundActive,
   adminSoundsKeys,
