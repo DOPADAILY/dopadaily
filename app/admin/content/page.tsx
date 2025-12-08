@@ -170,7 +170,7 @@ export default function ContentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         <header className="h-16 border-b border-border bg-surface-elevated sticky top-0 z-20">
           <div className="h-full  mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
             <MobileMenuButton />
@@ -198,7 +198,7 @@ export default function ContentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <header className="h-16 border-b border-border bg-surface-elevated sticky top-0 z-20">
         <div className="h-full  mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
           <MobileMenuButton />
@@ -235,8 +235,8 @@ export default function ContentPage() {
             <button
               onClick={() => setActiveTab('posts')}
               className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${activeTab === 'posts'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-on-surface-secondary hover:text-on-surface'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-on-surface-secondary hover:text-on-surface'
                 }`}
             >
               <MessageSquare size={18} className="inline mr-2" />
@@ -245,8 +245,8 @@ export default function ContentPage() {
             <button
               onClick={() => setActiveTab('comments')}
               className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${activeTab === 'comments'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-on-surface-secondary hover:text-on-surface'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-on-surface-secondary hover:text-on-surface'
                 }`}
             >
               <MessageSquare size={18} className="inline mr-2" />
@@ -255,8 +255,8 @@ export default function ContentPage() {
             <button
               onClick={() => setActiveTab('tips')}
               className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${activeTab === 'tips'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-on-surface-secondary hover:text-on-surface'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-on-surface-secondary hover:text-on-surface'
                 }`}
             >
               <Lightbulb size={18} className="inline mr-2" />

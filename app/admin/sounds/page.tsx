@@ -406,7 +406,7 @@ export default function AdminSoundsPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen">
                 <header className="h-16 border-b border-border bg-surface-elevated sticky top-0 z-20">
                     <div className="h-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
                         <MobileMenuButton />
@@ -430,7 +430,7 @@ export default function AdminSoundsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen">
             {/* Header */}
             <header className="h-16 border-b border-border bg-surface-elevated sticky top-0 z-20">
                 <div className="h-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">

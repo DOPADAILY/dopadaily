@@ -30,7 +30,7 @@ export default async function BannedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="card text-center">
           {/* Icon */}

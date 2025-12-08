@@ -57,7 +57,7 @@ export default async function DashboardPage() {
   // If network issue, show a simplified error state
   if (networkIssue && !user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="card text-center p-8 max-w-md">
           <Brain size={48} className="text-primary mx-auto mb-4" />
           <h2 className="text-xl font-bold text-on-surface mb-2">Connection Issue</h2>
