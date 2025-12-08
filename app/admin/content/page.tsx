@@ -282,9 +282,9 @@ export default function ContentPage() {
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-on-surface">{tip.title}</h3>
                           {tip.is_active ? (
-                            <CheckCircle size={16} className="text-success flex-shrink-0" />
+                            <CheckCircle size={16} className="text-success shrink-0" />
                           ) : (
-                            <XCircle size={16} className="text-neutral-medium flex-shrink-0" />
+                            <XCircle size={16} className="text-neutral-medium shrink-0" />
                           )}
                         </div>
                         <span className="inline-block px-2 py-1 bg-primary/10 text-primary rounded-md text-xs font-medium">
@@ -293,7 +293,7 @@ export default function ContentPage() {
                       </div>
                       <button
                         onClick={() => setDeletingTip(tip)}
-                        className="text-error hover:bg-error/10 p-2 rounded-lg transition-colors flex-shrink-0"
+                        className="text-error hover:bg-error/10 p-2 rounded-lg transition-colors shrink-0"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -391,7 +391,7 @@ export default function ContentPage() {
                           {post.content}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()

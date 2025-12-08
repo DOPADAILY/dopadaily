@@ -35,7 +35,7 @@ export default function ActivityLog({ initialLogs }: ActivityLogProps) {
       .select('*, profiles(username)')
       .order('created_at', { ascending: false })
       .limit(50)
-    
+
     if (error) {
       console.error('Error fetching audit logs:', error)
     } else if (data) {
@@ -58,7 +58,7 @@ export default function ActivityLog({ initialLogs }: ActivityLogProps) {
   let filteredLogs = logs
 
   if (filterAction !== 'all') {
-    filteredLogs = filteredLogs.filter(log => 
+    filteredLogs = filteredLogs.filter(log =>
       log.action.toLowerCase().includes(filterAction.toLowerCase())
     )
   }
@@ -116,7 +116,7 @@ export default function ActivityLog({ initialLogs }: ActivityLogProps) {
               </span>
             )}
           </h2>
-          
+
           <button
             onClick={refreshLogs}
             disabled={isRefreshing}
@@ -126,7 +126,7 @@ export default function ActivityLog({ initialLogs }: ActivityLogProps) {
             <RefreshCw size={16} className={`text-on-surface-secondary ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
-        
+
         {/* Filter Pills - Horizontal Scroll on Mobile */}
         <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
           <div className="flex items-center gap-2 min-w-max sm:min-w-0">
@@ -137,11 +137,10 @@ export default function ActivityLog({ initialLogs }: ActivityLogProps) {
                   setFilterAction(filter.value)
                   setLimit(10)
                 }}
-                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                  filterAction === filter.value
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'bg-backplate text-on-surface-secondary hover:text-on-surface hover:bg-surface border border-border'
-                }`}
+                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${filterAction === filter.value
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-backplate text-on-surface-secondary hover:text-on-surface hover:bg-surface border border-border'
+                  }`}
               >
                 {filter.label}
               </button>
@@ -163,10 +162,10 @@ export default function ActivityLog({ initialLogs }: ActivityLogProps) {
           </div>
         </div>
       ) : displayedLogs.length > 0 ? (
-        <div className="space-y-3 flex-1">
+        <div className="space-y-3 flex-1 max-h-[500px] overflow-y-auto pr-2">
           {displayedLogs.map((log) => (
-            <div 
-              key={log.id} 
+            <div
+              key={log.id}
               className="p-4 bg-backplate rounded-lg border border-border hover:border-primary/30 transition-colors"
             >
               <div className="flex items-start justify-between gap-4 mb-2">
