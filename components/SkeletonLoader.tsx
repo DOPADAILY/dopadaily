@@ -31,7 +31,7 @@ export function PageHeaderSkeleton() {
 // Dashboard skeleton
 export function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mkin-h-screen">
       {/* <PageHeaderSkeleton /> */}
       <div className="">
         {/* Stats Grid */}
@@ -95,7 +95,7 @@ export function DashboardSkeleton() {
 // Notes skeleton
 export function NotesSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mkin-h-screen">
       {/* <PageHeaderSkeleton /> */}
       <div className="">
         {/* Search and filters */}
@@ -138,7 +138,7 @@ export function NotesSkeleton() {
 // Focus Timer skeleton
 export function FocusSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mkin-h-screen">
       {/* <PageHeaderSkeleton /> */}
       <div className="flex flex-col items-center justify-center py-12 px-4">
         {/* Mode toggles */}
@@ -172,7 +172,7 @@ export function FocusSkeleton() {
 // Sounds skeleton
 export function SoundsSkeleton() {
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="mkin-h-screen p-6">
       {/* <PageHeaderSkeleton /> */}
       <div className="">
         {/* Filter */}
@@ -204,7 +204,7 @@ export function SoundsSkeleton() {
 // Achievements skeleton
 export function AchievementsSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mkin-h-screen">
       {/* <PageHeaderSkeleton /> */}
       <div className="">
         {/* Progress header */}
@@ -242,7 +242,7 @@ export function AchievementsSkeleton() {
 // Forum skeleton
 export function ForumSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mkin-h-screen">
       {/* <PageHeaderSkeleton /> */}
       <div className="">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -305,7 +305,7 @@ export function ForumSkeleton() {
 // Reminders skeleton
 export function RemindersSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mkin-h-screen">
       {/* <PageHeaderSkeleton /> */}
       <div className="">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
@@ -377,7 +377,7 @@ export function RemindersSkeleton() {
 // Settings skeleton
 export function SettingsSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mkin-h-screen">
       {/* <PageHeaderSkeleton /> */}
       <div className="max-w-4xl">
         {/* Profile section */}
@@ -440,7 +440,7 @@ export function SettingsSkeleton() {
 // Admin skeleton
 export function AdminSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mkin-h-screen">
       {/* <PageHeaderSkeleton /> */}
       <div className="">
         {/* Stats row */}
