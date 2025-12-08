@@ -7,6 +7,7 @@ import Timer from '@/components/timer/Timer'
 import StatCard from '@/components/StatCard'
 import { useFocusPageStats } from '@/hooks/queries'
 import { SkeletonPulse } from '@/components/SkeletonLoader'
+import AnimatedProgressBar from '@/components/AnimatedProgressBar'
 
 interface FocusPageClientProps {
   initialFocusDuration: number
@@ -49,12 +50,12 @@ export default function FocusPageClient({ initialFocusDuration, initialBreakDura
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
       {/* Main Timer Section */}
       <div className="xl:col-span-2 space-y-6">
-        <div className="card text-center">
+        <div className="card text-center animate-stagger-1">
           <Timer />
         </div>
 
         {/* Quick Tips */}
-        <div className="card bg-backplate">
+        <div className="card bg-backplate animate-stagger-3">
           <h3 className="font-semibold text-on-surface mb-4 flex items-center gap-2">
             <span className="text-lg">💡</span>
             Focus Tips
@@ -79,7 +80,7 @@ export default function FocusPageClient({ initialFocusDuration, initialBreakDura
       {/* Sidebar Stats */}
       <div className="space-y-6">
         {/* Today's Progress */}
-        <div className="card">
+        <div className="card animate-stagger-2">
           <div className="flex items-center gap-2 mb-4">
             <Calendar size={20} className="text-primary" />
             <h3 className="font-semibold text-on-surface">Today's Progress</h3>
@@ -110,12 +111,12 @@ export default function FocusPageClient({ initialFocusDuration, initialBreakDura
                     {todaySessionCount} / {dailyGoalSessions}
                   </span>
                 </div>
-                <div className="h-2 bg-backplate rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${Math.min(100, (todaySessionCount / dailyGoalSessions) * 100)}%` }}
-                  ></div>
-                </div>
+                <AnimatedProgressBar
+                  value={todaySessionCount}
+                  max={dailyGoalSessions}
+                  color="primary"
+                  showShimmer={todaySessionCount > 0}
+                />
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-2">
@@ -124,12 +125,12 @@ export default function FocusPageClient({ initialFocusDuration, initialBreakDura
                     {todayTotalMinutes}m / {dailyGoalMinutes}m
                   </span>
                 </div>
-                <div className="h-2 bg-backplate rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-secondary transition-all"
-                    style={{ width: `${Math.min(100, (todayTotalMinutes / dailyGoalMinutes) * 100)}%` }}
-                  ></div>
-                </div>
+                <AnimatedProgressBar
+                  value={todayTotalMinutes}
+                  max={dailyGoalMinutes}
+                  color="secondary"
+                  showShimmer={todayTotalMinutes > 0}
+                />
               </div>
             </div>
           )}

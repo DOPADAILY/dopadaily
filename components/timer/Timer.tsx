@@ -118,6 +118,34 @@ export default function Timer() {
 
       {/* Timer Display */}
       <div className="relative w-[340px] h-[340px] flex items-center justify-center">
+        {/* Breathing glow effect when active */}
+        {isActive && (
+          <div 
+            className="absolute inset-[-20px] rounded-full animate-timer-glow"
+            style={{
+              background: mode === 'focus' 
+                ? 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)'
+                : 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)',
+              opacity: 0.15,
+              filter: 'blur(20px)',
+            }}
+          />
+        )}
+
+        {/* Pulsing rings when active */}
+        {isActive && (
+          <>
+            <div 
+              className="absolute inset-[-30px] rounded-full border-2 animate-pulse-ring"
+              style={{ borderColor: mode === 'focus' ? 'var(--color-primary)' : 'var(--color-secondary)', opacity: 0.2 }}
+            />
+            <div 
+              className="absolute inset-[-50px] rounded-full border animate-pulse-ring"
+              style={{ borderColor: mode === 'focus' ? 'var(--color-primary)' : 'var(--color-secondary)', opacity: 0.1, animationDelay: '1s' }}
+            />
+          </>
+        )}
+
         {/* Background Circle */}
         <svg className="absolute top-0 left-0 w-full h-full transform -rotate-90">
           <circle
@@ -140,12 +168,15 @@ export default function Timer() {
             strokeDashoffset={strokeDashoffset}
             className="transition-all duration-1000 ease-linear"
             strokeLinecap="round"
+            style={{
+              filter: isActive ? 'drop-shadow(0 0 8px currentColor)' : 'none',
+            }}
           />
         </svg>
 
         {/* Time Display */}
-        <div className="text-center">
-          <div className="text-7xl font-bold font-mono text-on-surface tracking-tight">
+        <div className="text-center relative z-10">
+          <div className={`text-7xl font-bold font-mono text-on-surface tracking-tight transition-all ${isActive ? 'scale-105' : ''}`}>
             {formatTime(timeLeft)}
           </div>
           <div className="text-sm text-on-surface-secondary mt-2 uppercase tracking-wider font-medium">
@@ -156,20 +187,31 @@ export default function Timer() {
 
       {/* Controls */}
       <div className="flex gap-4 items-center">
-        <button
-          onClick={toggleTimer}
-          className="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center hover:shadow-lg transition-all active:scale-95 shadow-md cursor-pointer"
-        >
-          {isActive ? (
-            <Pause size={28} fill="currentColor" />
-          ) : (
-            <Play size={28} fill="currentColor" className="ml-0.5" />
+        <div className="relative">
+          {/* Ripple effect when active */}
+          {isActive && (
+            <>
+              <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" />
+              <div className="absolute inset-[-8px] rounded-full border-2 border-primary/30 animate-pulse" />
+            </>
           )}
-        </button>
+          <button
+            onClick={toggleTimer}
+            className={`relative w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center transition-all active:scale-95 shadow-md cursor-pointer ${
+              isActive ? 'btn-glow shadow-lg' : 'hover:shadow-lg hover:scale-105'
+            }`}
+          >
+            {isActive ? (
+              <Pause size={28} fill="currentColor" />
+            ) : (
+              <Play size={28} fill="currentColor" className="ml-0.5" />
+            )}
+          </button>
+        </div>
 
         <button
           onClick={resetTimer}
-          className="w-12 h-12 rounded-full bg-surface border border-border text-on-surface-secondary flex items-center justify-center hover:text-on-surface hover:border-primary transition-all cursor-pointer"
+          className="w-12 h-12 rounded-full bg-surface border border-border text-on-surface-secondary flex items-center justify-center hover:text-on-surface hover:border-primary hover:rotate-[-180deg] transition-all duration-500 cursor-pointer"
         >
           <RotateCcw size={18} />
         </button>

@@ -13,6 +13,7 @@ import ConfirmModal from '@/components/ConfirmModal'
 import Select from '@/components/Select'
 import { NotesSkeleton } from '@/components/SkeletonLoader'
 import UpgradePrompt from '@/components/UpgradePrompt'
+import NoteFormModal from '@/components/NoteFormModal'
 
 const categoryOptions = [
   { value: 'all', label: 'All Notes' },
@@ -202,12 +203,12 @@ export default function NotesClient() {
 
   const NoteCard = ({ note }: { note: Note }) => (
     <div
-      className={`group relative rounded-xl border-2 p-4 transition-all hover:shadow-md cursor-pointer ${getColorClass(note.color)} ${note.id.toString().startsWith('temp-') ? 'opacity-70' : ''}`}
+      className={`group relative rounded-xl border-2 p-4 transition-all duration-300 cursor-pointer card-interactive card-shimmer ${getColorClass(note.color)} ${note.id.toString().startsWith('temp-') ? 'opacity-70' : ''}`}
       onClick={() => setViewingNote(note)}
     >
       {/* Pin indicator */}
       {note.is_pinned && (
-        <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm">
+        <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm animate-bounce-in">
           <Pin size={12} className="text-on-primary" />
         </div>
       )}
@@ -228,7 +229,7 @@ export default function NotesClient() {
 
       {/* Title */}
       {note.title && (
-        <h3 className="font-semibold text-on-surface mb-1 line-clamp-1">
+        <h3 className="font-semibold text-on-surface mb-1 line-clamp-1 group-hover:text-primary transition-colors">
           {note.title}
         </h3>
       )}
@@ -245,10 +246,10 @@ export default function NotesClient() {
         </span>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0" onClick={e => e.stopPropagation()}>
           <button
             onClick={() => handleTogglePin(note)}
-            className="p-1.5 rounded-lg hover:bg-backplate text-on-surface-secondary hover:text-primary transition-colors"
+            className="p-1.5 rounded-lg hover:bg-backplate text-on-surface-secondary hover:text-primary hover:scale-110 transition-all"
             title={note.is_pinned ? 'Unpin' : 'Pin'}
             disabled={isPending}
           >
@@ -256,7 +257,7 @@ export default function NotesClient() {
           </button>
           <button
             onClick={() => setEditingNote(note)}
-            className="p-1.5 rounded-lg hover:bg-backplate text-on-surface-secondary hover:text-primary transition-colors"
+            className="p-1.5 rounded-lg hover:bg-backplate text-on-surface-secondary hover:text-primary hover:scale-110 transition-all"
             title="Edit"
             disabled={isPending}
           >
@@ -264,123 +265,13 @@ export default function NotesClient() {
           </button>
           <button
             onClick={() => setDeletingNote(note)}
-            className="p-1.5 rounded-lg hover:bg-error/10 text-on-surface-secondary hover:text-error transition-colors"
+            className="p-1.5 rounded-lg hover:bg-error/10 text-on-surface-secondary hover:text-error hover:scale-110 transition-all"
             title="Delete"
             disabled={isPending}
           >
             <Trash2 size={14} />
           </button>
         </div>
-      </div>
-    </div>
-  )
-
-  const NoteForm = ({
-    note,
-    onSubmit,
-    onCancel,
-    title,
-    isSubmitting
-  }: {
-    note?: Note | null
-    onSubmit: (formData: FormData) => void
-    onCancel: () => void
-    title: string
-    isSubmitting: boolean
-  }) => (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
-      <div className="relative bg-surface-elevated rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up">
-        {/* Header */}
-        <div className="sticky top-0 bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <FileText size={20} className="text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold text-on-surface">{title}</h2>
-          </div>
-          <button
-            onClick={onCancel}
-            className="p-2 rounded-lg hover:bg-backplate transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form action={onSubmit} className="p-6 space-y-5">
-          {note && <input type="hidden" name="id" value={note.id} />}
-
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-2">
-              Title <span className="text-on-surface-secondary font-normal">(optional)</span>
-            </label>
-            <input
-              name="title"
-              defaultValue={note?.title || ''}
-              placeholder="Give your note a title..."
-              className="input w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-on-surface mb-2">Content</label>
-            <textarea
-              name="content"
-              rows={6}
-              required
-              defaultValue={note?.content || ''}
-              placeholder="What's on your mind?"
-              className="input w-full min-h-[150px] py-3 resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-on-surface mb-2">Category</label>
-              <Select
-                name="category"
-                defaultValue={note?.category || 'general'}
-                options={categoryOptions.filter(o => o.value !== 'all')}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-on-surface mb-2">Color</label>
-              <div className="flex gap-2 flex-wrap">
-                {colorOptions.map((color) => (
-                  <label key={color.value} className="cursor-pointer">
-                    <input
-                      type="radio"
-                      name="color"
-                      value={color.value}
-                      defaultChecked={note?.color === color.value || (!note && color.value === 'default')}
-                      className="sr-only peer"
-                    />
-                    <div className={`w-8 h-8 rounded-lg border-2 ${color.class} peer-checked:ring-2 peer-checked:ring-primary peer-checked:ring-offset-2 transition-all`} />
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary w-full"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                {note ? <Edit2 size={18} /> : <Plus size={18} />}
-                {note ? 'Update Note' : 'Create Note'}
-              </>
-            )}
-          </button>
-        </form>
       </div>
     </div>
   )
@@ -407,7 +298,7 @@ export default function NotesClient() {
       )}
 
       {/* Filters & Search */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6 animate-stagger-1">
         <div className="w-full sm:flex-1 flex items-center gap-2 px-3 h-10 bg-surface-elevated border border-border rounded-lg focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
           <Search size={18} className="text-on-surface-secondary shrink-0" />
           <input
@@ -443,7 +334,7 @@ export default function NotesClient() {
 
       {/* Notes Grid */}
       {filteredNotes.length === 0 ? (
-        <div className="card">
+        <div className="card animate-stagger-2">
           <EmptyState
             icon={FileText}
             title={searchQuery || filterCategory !== 'all' ? 'No notes found' : 'No notes yet'}
@@ -466,7 +357,7 @@ export default function NotesClient() {
           />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-stagger-2">
           {/* Pinned Notes */}
           {pinnedNotes.length > 0 && (
             <div>
@@ -477,8 +368,10 @@ export default function NotesClient() {
                 </h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pinnedNotes.map(note => (
-                  <NoteCard key={note.id} note={note} />
+                {pinnedNotes.map((note, index) => (
+                  <div key={note.id} className="animate-scale-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
+                    <NoteCard note={note} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -496,8 +389,10 @@ export default function NotesClient() {
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {unpinnedNotes.map(note => (
-                  <NoteCard key={note.id} note={note} />
+                {unpinnedNotes.map((note, index) => (
+                  <div key={note.id} className="animate-scale-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
+                    <NoteCard note={note} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -578,7 +473,7 @@ export default function NotesClient() {
 
       {/* Create Modal */}
       {isCreateOpen && (
-        <NoteForm
+        <NoteFormModal
           onSubmit={handleCreateNote}
           onCancel={() => setIsCreateOpen(false)}
           title="Create Note"
@@ -588,7 +483,7 @@ export default function NotesClient() {
 
       {/* Edit Modal */}
       {editingNote && (
-        <NoteForm
+        <NoteFormModal
           note={editingNote}
           onSubmit={handleUpdateNote}
           onCancel={() => setEditingNote(null)}

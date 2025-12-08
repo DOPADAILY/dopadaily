@@ -172,7 +172,7 @@ export function FocusSkeleton() {
 // Sounds skeleton
 export function SoundsSkeleton() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background p-6">
       {/* <PageHeaderSkeleton /> */}
       <div className="">
         {/* Filter */}

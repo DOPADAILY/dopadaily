@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, Trash2, Calendar, Plus, Clock, X, Edit2, Loader2, Crown } from 'lucide-react'
+import { Bell, Trash2, Calendar, Plus, Clock, Edit2, Crown } from 'lucide-react'
 import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder, Reminder, useFeatureLimit } from '@/hooks/queries'
 import EmptyState from '@/components/EmptyState'
 import Toast from '@/components/Toast'
 import ConfirmModal from '@/components/ConfirmModal'
 import { RemindersSkeleton } from '@/components/SkeletonLoader'
 import UpgradePrompt from '@/components/UpgradePrompt'
+import ReminderFormModal from '@/components/ReminderFormModal'
 
 interface RemindersClientProps {
   userId: string
@@ -37,14 +38,14 @@ export default function RemindersClient({
   const userRemindersCount = upcomingReminders.filter(r => r.created_by === userId && !r.is_global).length
   const { isAtLimit, remaining, isPremium } = useFeatureLimit('maxReminders', userRemindersCount)
 
-  const handleCreateReminder = async (formData: FormData) => {
-    const title = formData.get('title') as string
-    const message = formData.get('message') as string
-    const isGlobal = formData.get('isGlobal') === 'on'
-    const date = formData.get('date') as string
-
+  const handleCreateReminder = (data: {
+    title: string
+    message: string
+    remind_at: string
+    is_global: boolean
+  }) => {
     createReminder.mutate(
-      { title, message, remind_at: date, is_global: isGlobal },
+      { title: data.title, message: data.message, remind_at: data.remind_at, is_global: data.is_global },
       {
         onSuccess: () => {
           setIsCreateOpen(false)
@@ -57,15 +58,17 @@ export default function RemindersClient({
     )
   }
 
-  const handleUpdateReminder = async (formData: FormData) => {
-    const id = parseInt(formData.get('id') as string)
-    const title = formData.get('title') as string
-    const message = formData.get('message') as string
-    const isGlobal = formData.get('isGlobal') === 'on'
-    const date = formData.get('date') as string
+  const handleUpdateReminder = (data: {
+    id?: number
+    title: string
+    message: string
+    remind_at: string
+    is_global: boolean
+  }) => {
+    if (!data.id) return
 
     updateReminder.mutate(
-      { id, title, message, remind_at: date, is_global: isGlobal },
+      { id: data.id, title: data.title, message: data.message, remind_at: data.remind_at, is_global: data.is_global },
       {
         onSuccess: () => {
           setEditingReminder(null)
@@ -312,190 +315,25 @@ export default function RemindersClient({
 
       {/* Edit Modal */}
       {editingReminder && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
-          <div className="relative bg-surface-elevated rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up">
-            {/* Header */}
-            <div className="sticky top-0 bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Edit2 size={20} className="text-primary" />
-                </div>
-                <h2 className="text-xl font-semibold text-on-surface">Edit Reminder</h2>
-              </div>
-              <button
-                onClick={() => setEditingReminder(null)}
-                className="p-2 rounded-lg hover:bg-backplate transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Form */}
-            <form action={handleUpdateReminder} className="p-6 space-y-5">
-              <input type="hidden" name="id" value={editingReminder.id} />
-
-              <div>
-                <label className="block text-sm font-semibold text-on-surface mb-2">Title</label>
-                <input
-                  name="title"
-                  required
-                  defaultValue={editingReminder.title}
-                  placeholder="e.g., Drink water"
-                  className="input w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-on-surface mb-2">Message (Optional)</label>
-                <textarea
-                  name="message"
-                  rows={3}
-                  defaultValue={editingReminder.message || ''}
-                  placeholder="Additional details..."
-                  className="input w-full min-h-[80px] py-3 resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-on-surface mb-2">Date & Time</label>
-                <input
-                  name="date"
-                  type="datetime-local"
-                  required
-                  defaultValue={new Date(editingReminder.remind_at).toISOString().slice(0, 16)}
-                  className="input w-full"
-                />
-              </div>
-
-              {isAdmin && (
-                <div className="p-3 bg-backplate rounded-lg border border-border">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="isGlobal"
-                      id="editIsGlobal"
-                      defaultChecked={editingReminder.is_global}
-                      className="mt-0.5 rounded text-primary"
-                    />
-                    <div className="text-sm">
-                      <span className="font-semibold text-on-surface block mb-1">Send to all users</span>
-                      <span className="text-xs text-on-surface-secondary">Community-wide wellness reminder</span>
-                    </div>
-                  </label>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="btn btn-primary w-full"
-                disabled={updateReminder.isPending}
-              >
-                {updateReminder.isPending ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <Edit2 size={18} />
-                    Update Reminder
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
+        <ReminderFormModal
+          reminder={editingReminder}
+          isAdmin={isAdmin}
+          onSubmit={handleUpdateReminder}
+          onCancel={() => setEditingReminder(null)}
+          title="Edit Reminder"
+          isSubmitting={updateReminder.isPending}
+        />
       )}
 
-      {/* Create Modal (Mobile) */}
+      {/* Create Modal */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
-          <div className="relative bg-surface-elevated rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up">
-            {/* Header */}
-            <div className="sticky top-0 bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Bell size={20} className="text-primary" />
-                </div>
-                <h2 className="text-xl font-semibold text-on-surface">Create Reminder</h2>
-              </div>
-              <button
-                onClick={() => setIsCreateOpen(false)}
-                className="p-2 rounded-lg hover:bg-backplate transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Form */}
-            <form action={handleCreateReminder} className="p-6 space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-on-surface mb-2">Title</label>
-                <input
-                  name="title"
-                  required
-                  placeholder="e.g., Drink water"
-                  className="input w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-on-surface mb-2">Message (Optional)</label>
-                <textarea
-                  name="message"
-                  rows={3}
-                  placeholder="Additional details..."
-                  className="input w-full min-h-[80px] py-3 resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-on-surface mb-2">Date & Time</label>
-                <input
-                  name="date"
-                  type="datetime-local"
-                  required
-                  className="input w-full"
-                />
-              </div>
-
-              {isAdmin && (
-                <div className="p-3 bg-backplate rounded-lg border border-border">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="isGlobal"
-                      id="isGlobal"
-                      className="mt-0.5 rounded text-primary"
-                    />
-                    <div className="text-sm">
-                      <span className="font-semibold text-on-surface block mb-1">Send to all users</span>
-                      <span className="text-xs text-on-surface-secondary">Community-wide wellness reminder</span>
-                    </div>
-                  </label>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="btn btn-primary w-full"
-                disabled={createReminder.isPending}
-              >
-                {createReminder.isPending ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={18} />
-                    Create Reminder
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
+        <ReminderFormModal
+          isAdmin={isAdmin}
+          onSubmit={handleCreateReminder}
+          onCancel={() => setIsCreateOpen(false)}
+          title="Create Reminder"
+          isSubmitting={createReminder.isPending}
+        />
       )}
 
       {/* Delete Confirmation */}

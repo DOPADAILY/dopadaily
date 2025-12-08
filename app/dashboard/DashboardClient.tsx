@@ -7,6 +7,7 @@ import ReminderNotifications from '@/components/ReminderNotifications'
 import EmptyState from '@/components/EmptyState'
 import { useDashboardStats } from '@/hooks/queries'
 import { DashboardSkeleton } from '@/components/SkeletonLoader'
+import AnimatedProgressBar from '@/components/AnimatedProgressBar'
 
 interface DashboardClientProps {
     userId: string
@@ -58,12 +59,12 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
     return (
         <>
             {/* Reminder Notifications */}
-            <div className="mb-6">
+            <div className="mb-6 animate-stagger-1">
                 <ReminderNotifications userId={userId} />
             </div>
 
             {/* Mobile: Today's Focus Sessions at top */}
-            <div className="xl:hidden mb-6">
+            <div className="xl:hidden mb-6 animate-stagger-2">
                 <div className="card">
                     <div className="flex items-center gap-2 mb-6">
                         <Clock size={20} className="text-primary" />
@@ -104,37 +105,43 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-8">
-                <StatCard
-                    label="Focus Sessions Today"
-                    value={`${todaySessionCount || 0} / ${profile?.daily_goal || 8}`}
-                    change={todaySessionCount ? `${todayTotalMinutes} minutes` : 'Start your first session!'}
-                    changeType={todaySessionCount && todaySessionCount >= (profile?.daily_goal || 8) ? 'positive' : 'neutral'}
-                />
-                <StatCard
-                    label="Total Time This Week"
-                    value={weekTotalHours > 0 ? `${weekTotalHours}h ${weekRemainingMinutes}m` : `${weekTotalMinutes}m`}
-                    change={weekSessionCount > 0 ? `${weekSessionCount} sessions` : 'Time to focus'}
-                    changeType={weekSessionCount > 0 ? 'positive' : 'neutral'}
-                />
-                <StatCard
+                <div className="animate-stagger-2">
+                    <StatCard
+                        label="Focus Sessions Today"
+                        value={`${todaySessionCount || 0} / ${profile?.daily_goal || 8}`}
+                        change={todaySessionCount ? `${todayTotalMinutes} minutes` : 'Start your first session!'}
+                        changeType={todaySessionCount && todaySessionCount >= (profile?.daily_goal || 8) ? 'positive' : 'neutral'}
+                    />
+                </div>
+                <div className="animate-stagger-3">
+                    <StatCard
+                        label="Total Time This Week"
+                        value={weekTotalHours > 0 ? `${weekTotalHours}h ${weekRemainingMinutes}m` : `${weekTotalMinutes}m`}
+                        change={weekSessionCount > 0 ? `${weekSessionCount} sessions` : 'Time to focus'}
+                        changeType={weekSessionCount > 0 ? 'positive' : 'neutral'}
+                    />
+                </div>
+                <div className="animate-stagger-4"><StatCard
                     label="Your Posts"
                     value={`${userPostsCount || 0}`}
                     change={`${totalPostsCount || 0} total community posts`}
                     changeType="neutral"
-                />
-                <StatCard
-                    label="Current Streak"
-                    value={`${streak} ${streak === 1 ? 'day' : 'days'}`}
-                    change={streak > 0 ? 'Keep it going! 🔥' : 'Start today!'}
-                    changeType={streak > 0 ? 'positive' : 'neutral'}
-                />
+                /></div>
+                <div className="animate-stagger-5">
+                    <StatCard
+                        label="Current Streak"
+                        value={`${streak} ${streak === 1 ? 'day' : 'days'}`}
+                        change={streak > 0 ? 'Keep it going! 🔥' : 'Start today!'}
+                        changeType={streak > 0 ? 'positive' : 'neutral'}
+                    />
+                </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="mb-8">
+            <div className="mb-8 animate-stagger-6">
                 <h2 className="text-xl font-semibold text-on-surface mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-                    <Link href="/focus" className="group card hover:border-primary transition-all hover:shadow-md">
+                    <Link href="/focus" className="group card card-interactive hover:border-primary">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <Brain size={24} className="text-primary" />
@@ -146,7 +153,7 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
                         </div>
                     </Link>
 
-                    <Link href="/forum" className="group card hover:border-secondary transition-all hover:shadow-md">
+                    <Link href="/forum" className="group card card-interactive hover:border-secondary">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <MessageSquare size={24} className="text-secondary" />
@@ -158,7 +165,7 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
                         </div>
                     </Link>
 
-                    <Link href="/reminders" className="group card hover:border-accent transition-all hover:shadow-md">
+                    <Link href="/reminders" className="group card card-interactive hover:border-accent">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <Bell size={24} className="text-accent" />
@@ -173,7 +180,7 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
             </div>
 
             {/* Today's Schedule & Progress */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8 animate-stagger-7">
                 {/* Today's Sessions - Hidden on mobile (shown above), visible on desktop */}
                 <div className="hidden xl:block xl:col-span-2 card">
                     <div className="flex items-center gap-2 mb-6">
@@ -226,12 +233,13 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
                             <p className="text-sm text-neutral-medium font-medium mb-4">
                                 {milestoneProgress.milestone.description || 'Complete this milestone to unlock the achievement!'}
                             </p>
-                            <div className="h-2 bg-neutral-medium/20 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-neutral-medium transition-all duration-500"
-                                    style={{ width: `${milestoneProgress.progressPercentage}%` }}
-                                ></div>
-                            </div>
+                            <AnimatedProgressBar
+                                value={milestoneProgress.progressPercentage}
+                                max={100}
+                                color="secondary"
+                                showShimmer={milestoneProgress.progressPercentage > 0}
+                                height="sm"
+                            />
                             <p className="text-xs text-neutral-medium font-medium mt-2">
                                 {milestoneProgress.totalSessions} / {milestoneProgress.milestone.session_threshold} sessions
                                 {milestoneProgress.sessionsToGo > 0 && ` (${milestoneProgress.sessionsToGo} to go!)`}

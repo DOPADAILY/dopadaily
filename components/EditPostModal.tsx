@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition } from 'react'
 import { Save, X } from 'lucide-react'
 import Modal from './Modal'
 import Select from './Select'
@@ -56,10 +56,20 @@ export default function EditPostModal({
 }: EditPostModalProps) {
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
-  const formRef = useRef<HTMLFormElement>(null)
+  
+  // Controlled state for form inputs
+  const [formTitle, setFormTitle] = useState(initialTitle)
+  const [formContent, setFormContent] = useState(initialContent)
+  const [formCategory, setFormCategory] = useState(initialCategory)
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const formData = new FormData()
     formData.append('post_id', postId.toString())
+    formData.append('category', formCategory)
+    formData.append('title', formTitle)
+    formData.append('content', formContent)
 
     startTransition(async () => {
       const result = await onUpdate(formData)
@@ -83,7 +93,7 @@ export default function EditPostModal({
         onClose={onClose}
         title="Edit Post"
       >
-        <form ref={formRef} action={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="edit-category" className="block text-sm font-semibold text-on-surface mb-2">
               Category
@@ -92,7 +102,8 @@ export default function EditPostModal({
               name="category"
               id="edit-category"
               options={categoryOptions}
-              defaultValue={initialCategory}
+              value={formCategory}
+              onChange={(value) => setFormCategory(value)}
             />
           </div>
 
@@ -105,7 +116,8 @@ export default function EditPostModal({
               name="title"
               id="edit-title"
               required
-              defaultValue={initialTitle}
+              value={formTitle}
+              onChange={(e) => setFormTitle(e.target.value)}
               placeholder="What's on your mind?"
               className="input w-full"
               disabled={isPending}
@@ -121,7 +133,8 @@ export default function EditPostModal({
               id="edit-content"
               required
               rows={10}
-              defaultValue={initialContent}
+              value={formContent}
+              onChange={(e) => setFormContent(e.target.value)}
               placeholder="Share your thoughts, experiences, or questions..."
               className="input w-full min-h-[200px] py-3 resize-none"
               disabled={isPending}

@@ -118,7 +118,7 @@ export default function ForumClient({ totalMembers, totalDiscussions, activeToda
       {/* Main Content */}
       <div className="xl:col-span-3 space-y-6">
         {/* Mobile Categories - Horizontal scrollable */}
-        <div className="xl:hidden overflow-x-auto -mx-4 px-4">
+        <div className="xl:hidden overflow-x-auto -mx-4 px-4 animate-stagger-1">
           <div className="flex gap-2 pb-2 min-w-max">
             <Link
               href="/forum"
@@ -249,11 +249,12 @@ export default function ForumClient({ totalMembers, totalDiscussions, activeToda
           />
         ) : (
           <div className="space-y-3">
-            {posts.map((post) => (
+            {posts.map((post, index) => (
               <Link
                 key={post.id}
                 href={`/forum/${post.id}`}
-                className="block card hover:border-primary transition-all hover:shadow-sm group"
+                className="block card card-interactive hover:border-primary group animate-scale-fade-in"
+                style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">

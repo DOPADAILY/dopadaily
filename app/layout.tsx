@@ -5,6 +5,7 @@ import ConditionalSidebar from "@/components/ConditionalSidebar";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { MobileSidebarProvider } from "@/components/MobileSidebar";
 import MiniPlayer from "@/components/MiniPlayer";
+import MusicPlayerModal from "@/components/MusicPlayerModal";
 import { QueryProvider } from "@/providers/QueryProvider";
 
 const montserrat = Montserrat({
@@ -177,6 +178,7 @@ export default function RootLayout({
               {children}
             </ConditionalLayout>
             <MiniPlayer />
+            <MusicPlayerModal />
           </MobileSidebarProvider>
         </QueryProvider>
       </body>

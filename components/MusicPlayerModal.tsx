@@ -115,26 +115,25 @@ export default function MusicPlayerModal() {
 
                     {/* Music icon */}
                     <div className="relative z-10 flex flex-col items-center gap-4">
-                        <div className={`p-6 rounded-full bg-surface/80 backdrop-blur-sm shadow-xl ${isPlaying ? 'animate-pulse' : ''}`}>
-                            <Music size={isExpanded ? 64 : 48} className="text-primary" />
+                        <div className={`p-6 rounded-full bg-surface/80 backdrop-blur-sm shadow-xl transition-all duration-300 ${isPlaying ? 'animate-sound-pulse scale-105' : ''}`}>
+                            <Music size={isExpanded ? 64 : 48} className={`text-primary transition-transform duration-300 ${isPlaying ? 'animate-spin-slow' : ''}`} />
                         </div>
 
-                        {/* Equalizer bars */}
-                        {isPlaying && (
-                            <div className="flex items-end gap-1.5 h-16">
-                                {[...Array(isExpanded ? 8 : 5)].map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className="w-2 bg-primary rounded-full animate-pulse"
-                                        style={{
-                                            height: `${20 + Math.random() * 60}%`,
-                                            animationDelay: `${i * 100}ms`,
-                                            animationDuration: `${600 + Math.random() * 400}ms`
-                                        }}
-                                    ></div>
-                                ))}
-                            </div>
-                        )}
+                        {/* Waveform Equalizer bars */}
+                        <div className={`flex items-end justify-center gap-1 h-16 transition-opacity duration-300 ${isPlaying ? 'opacity-100' : 'opacity-30'}`}>
+                            {[...Array(isExpanded ? 12 : 7)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className={`w-1.5 bg-linear-to-t from-primary to-primary-light rounded-full transition-all ${isPlaying ? 'waveform-bar' : ''}`}
+                                    style={{
+                                        height: isPlaying ? undefined : '20%',
+                                        minHeight: '8px',
+                                        animationDelay: `${i * 0.1}s`,
+                                        animationDuration: `${0.8 + Math.random() * 0.4}s`,
+                                    }}
+                                />
+                            ))}
+                        </div>
                     </div>
 
                     {/* Category badge */}
@@ -209,19 +208,25 @@ export default function MusicPlayerModal() {
                     </button>
 
                     {/* Play/Pause button */}
-                    <button
-                        onClick={togglePlayPause}
-                        disabled={isLoading}
-                        className="p-5 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-wait disabled:hover:scale-100"
-                    >
-                        {isLoading ? (
-                            <Loader2 size={28} className="animate-spin" />
-                        ) : isPlaying ? (
-                            <Pause size={28} />
-                        ) : (
-                            <Play size={28} className="ml-1" />
+                    <div className="relative">
+                        {isPlaying && (
+                            <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" />
                         )}
-                    </button>
+                        <button
+                            onClick={togglePlayPause}
+                            disabled={isLoading}
+                            className={`relative p-5 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-wait ${isPlaying ? 'btn-glow hover:shadow-xl' : 'hover:scale-105 hover:shadow-xl'
+                                }`}
+                        >
+                            {isLoading ? (
+                                <Loader2 size={28} className="animate-spin" />
+                            ) : isPlaying ? (
+                                <Pause size={28} />
+                            ) : (
+                                <Play size={28} className="ml-1" />
+                            )}
+                        </button>
+                    </div>
 
                     {/* Volume control */}
                     <div className="flex items-center gap-2">

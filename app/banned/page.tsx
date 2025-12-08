@@ -52,7 +52,7 @@ export default async function BannedPage() {
           {banReason && (
             <div className="bg-error/5 border border-error/20 rounded-lg p-4 mb-4 text-left">
               <div className="flex items-start gap-2">
-                <AlertCircle size={18} className="text-error mt-0.5 flex-shrink-0" />
+                <AlertCircle size={18} className="text-error mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-on-surface mb-1">Reason:</p>
                   <p className="text-sm text-on-surface-secondary">{banReason}</p>
@@ -65,7 +65,7 @@ export default async function BannedPage() {
           {!isPermanent && bannedUntil && (
             <div className="bg-backplate border border-border rounded-lg p-4 mb-4 text-left">
               <div className="flex items-start gap-2">
-                <Clock size={18} className="text-on-surface-secondary mt-0.5 flex-shrink-0" />
+                <Clock size={18} className="text-on-surface-secondary mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-on-surface mb-1">Temporary Ban</p>
                   <p className="text-sm text-on-surface-secondary">

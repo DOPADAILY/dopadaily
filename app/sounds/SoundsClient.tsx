@@ -5,7 +5,6 @@ import { Music, Play, Search, Headphones, Waves, Sparkles, WifiOff, Lock, Crown 
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import Select from '@/components/Select'
-import MusicPlayerModal from '@/components/MusicPlayerModal'
 import EmptyState from '@/components/EmptyState'
 import { useAudioStore } from '@/stores/audioStore'
 import { useSounds, useIncrementPlayCount, AmbientSound, useIsPremium } from '@/hooks/queries'
@@ -138,9 +137,9 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         {/* Header */}
-        <header className="h-16 border-b border-border bg-surface-elevated sticky top-0 z-20">
+        <header className="h-16 border-b border-border bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
           <div className="h-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
             <MobileMenuButton />
             <div className="min-w-0 flex-1">
@@ -169,9 +168,9 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="h-16 border-b border-border bg-surface-elevated sticky top-0 z-20">
+      <header className="h-16 border-b border-border bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
         <div className="h-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
           <MobileMenuButton />
           <div className="min-w-0 flex-1">
@@ -189,8 +188,8 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
 
       <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
         {/* Hero Section */}
-        <div className="mb-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-on-surface mb-3">
+        <div className="mb-8 text-center animate-stagger-1">
+          <h2 className="text-3xl sm:text-4xl font-bold text-on-surface mb-3 gradient-text-animated">
             Find Your Focus
           </h2>
           <p className="text-on-surface-secondary max-w-2xl mx-auto">
@@ -199,7 +198,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
         </div>
 
         {/* Search and Filter */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-stagger-2">
           <div className="relative flex-1">
             <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-medium" />
             <input
@@ -252,14 +251,15 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSounds.map((sound) => {
+            {filteredSounds.map((sound, index) => {
               const CategoryIcon = getCategoryIcon(sound.category)
               const isLocked = !isPremium && !isSoundFree(sound.id)
 
               return (
                 <div
                   key={sound.id}
-                  className={`group card hover:border-primary/30 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer relative ${isLocked ? 'opacity-75' : ''}`}
+                  className={`group card card-interactive card-shimmer hover:border-primary/30 overflow-hidden cursor-pointer relative animate-scale-fade-in ${isLocked ? 'opacity-75' : ''}`}
+                  style={{ animationDelay: `${index * 0.05}s` }}
                   onClick={() => handlePlaySound(sound)}
                 >
                   {/* Premium Lock Overlay */}
@@ -346,7 +346,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
         )}
 
         {/* Info Card */}
-        <div className="mt-12 card bg-linear-to-br from-primary/5 to-secondary/5 border-primary/20">
+        <div className="mt-12 card bg-linear-to-br from-primary/5 to-secondary/5 border-primary/20 animate-stagger-4">
           <div className="flex items-start gap-4">
             <div className="shrink-0 p-3 rounded-full bg-primary/10">
               <Headphones size={24} className="text-primary" />
@@ -375,9 +375,6 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
           </div>
         </div>
       </div>
-
-      {/* Music Player Modal */}
-      <MusicPlayerModal />
 
       {/* Upgrade Modal */}
       {showUpgradeModal && (

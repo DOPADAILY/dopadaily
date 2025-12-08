@@ -84,7 +84,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
     : baseNavItems
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-surface-elevated border-r border-border flex flex-col">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-surface-elevated/95 backdrop-blur-sm border-r border-border flex flex-col z-40">
 
       {/* Logo */}
       <div className="h-16 flex items-center gap-3 px-6 border-b border-border">
@@ -98,23 +98,34 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-6 space-y-1">
-        {navItems.map((item) => {
+        {navItems.map((item, index) => {
           const Icon = item.icon
           const isHighlight = 'highlight' in item && item.highlight
+          const active = isActive(item.href)
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={handleNavClick}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${isActive(item.href)
+              className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer animate-slide-in-left ${active
                 ? 'bg-primary text-on-primary shadow-sm'
                 : isHighlight
                   ? 'text-primary bg-primary/10 hover:bg-primary/20'
                   : 'text-on-surface-secondary hover:bg-backplate hover:text-on-surface'
                 }`}
+              style={{ animationDelay: `${index * 0.12}s` }}
             >
-              <Icon size={20} />
-              {item.label}
+              {/* Active indicator line */}
+              <span
+                className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-primary transition-all duration-200 ${active ? 'h-[60%] opacity-100' : 'h-0 opacity-0 group-hover:h-[40%] group-hover:opacity-50'
+                  }`}
+              />
+              <Icon size={20} className={`transition-transform duration-200 ${!active ? 'group-hover:scale-110' : ''}`} />
+              <span className="flex-1">{item.label}</span>
+              {/* Hover glow effect */}
+              {!active && (
+                <span className="absolute inset-0 rounded-lg bg-primary/0 group-hover:bg-primary/5 transition-colors duration-200" />
+              )}
             </Link>
           )
         })}
@@ -143,19 +154,19 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
         <Link
           href="/settings"
           onClick={handleNavClick}
-          className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${isActive('/settings')
+          className={`group relative flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${isActive('/settings')
             ? 'bg-primary text-on-primary shadow-sm'
             : 'text-on-surface-secondary hover:bg-backplate hover:text-on-surface'
             }`}
         >
-          <Settings size={20} />
+          <Settings size={20} className={`transition-transform duration-300 ${!isActive('/settings') ? 'group-hover:rotate-90' : ''}`} />
           Settings
         </Link>
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-on-surface-secondary hover:bg-backplate hover:text-on-surface transition-all cursor-pointer"
+          className="group flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-on-surface-secondary hover:bg-error/10 hover:text-error transition-all duration-200 cursor-pointer"
         >
-          <LogOut size={20} />
+          <LogOut size={20} className="transition-transform duration-200 group-hover:translate-x-1" />
           Logout
         </button>
       </div>

@@ -23,6 +23,202 @@ interface MilestonesClientProps {
     milestones: Milestone[]
 }
 
+// Separate component for Edit Modal to prevent re-renders from causing flicker
+function EditMilestoneModal({
+    milestone,
+    emojiSelectOptions,
+    isSubmitting,
+    onSubmit,
+    onClose,
+}: {
+    milestone: Milestone
+    emojiSelectOptions: { value: string; label: string }[]
+    isSubmitting: boolean
+    onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+    onClose: () => void
+}) {
+    const [title, setTitle] = useState(milestone.title)
+    const [sessionThreshold, setSessionThreshold] = useState(milestone.session_threshold.toString())
+    const [badgeIcon, setBadgeIcon] = useState(milestone.badge_icon)
+    const [description, setDescription] = useState(milestone.description)
+    const [badgeColor, setBadgeColor] = useState(milestone.badge_color || '#10b981')
+    const [isActive, setIsActive] = useState(milestone.is_active)
+
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        const formData = new FormData()
+        formData.append('id', milestone.id.toString())
+        formData.append('title', title)
+        formData.append('session_threshold', sessionThreshold)
+        formData.append('badge_icon', badgeIcon)
+        formData.append('description', description)
+        formData.append('badge_color', badgeColor)
+        if (isActive) formData.append('is_active', 'on')
+        
+        // Create a synthetic event with the form data
+        const syntheticEvent = {
+            ...e,
+            currentTarget: { ...e.currentTarget, elements: {} } as HTMLFormElement,
+            preventDefault: () => {},
+        }
+        // Attach formData to currentTarget for the handler
+        Object.defineProperty(syntheticEvent, 'currentTarget', {
+            value: {
+                ...e.currentTarget,
+                // Override to return our controlled values
+            },
+            writable: false,
+        })
+        
+        // Call the original handler with our form
+        const form = e.currentTarget
+        // Reset form values to controlled state before submission
+        const titleInput = form.querySelector('[name="title"]') as HTMLInputElement
+        const thresholdInput = form.querySelector('[name="session_threshold"]') as HTMLInputElement
+        const descInput = form.querySelector('[name="description"]') as HTMLTextAreaElement
+        const colorInput = form.querySelector('[name="badge_color"]') as HTMLInputElement
+        const activeInput = form.querySelector('[name="is_active"]') as HTMLInputElement
+        
+        if (titleInput) titleInput.value = title
+        if (thresholdInput) thresholdInput.value = sessionThreshold
+        if (descInput) descInput.value = description
+        if (colorInput) colorInput.value = badgeColor
+        if (activeInput) activeInput.checked = isActive
+        
+        onSubmit(e)
+    }
+
+    return (
+        <Modal
+            isOpen={true}
+            onClose={() => !isSubmitting && onClose()}
+            title="Edit Milestone"
+        >
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <input type="hidden" name="id" value={milestone.id} />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label htmlFor="edit-title" className="block text-sm font-semibold text-on-surface mb-2">
+                            Milestone Title *
+                        </label>
+                        <input
+                            type="text"
+                            id="edit-title"
+                            name="title"
+                            required
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="edit-sessions" className="block text-sm font-semibold text-on-surface mb-2">
+                            Sessions Required *
+                        </label>
+                        <input
+                            type="number"
+                            id="edit-sessions"
+                            name="session_threshold"
+                            required
+                            min="1"
+                            value={sessionThreshold}
+                            onChange={(e) => setSessionThreshold(e.target.value)}
+                            className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label htmlFor="edit-badge-icon" className="block text-sm font-semibold text-on-surface mb-2">
+                        Icon (Emoji) *
+                    </label>
+                    <Select
+                        id="edit-badge-icon"
+                        name="badge_icon"
+                        options={emojiSelectOptions}
+                        value={badgeIcon}
+                        onChange={(value) => setBadgeIcon(value)}
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label htmlFor="edit-description" className="block text-sm font-semibold text-on-surface mb-2">
+                        Description *
+                    </label>
+                    <textarea
+                        id="edit-description"
+                        name="description"
+                        rows={3}
+                        required
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y"
+                    ></textarea>
+                </div>
+
+                <div>
+                    <label htmlFor="edit-badge-color" className="block text-sm font-semibold text-on-surface mb-2">
+                        Badge Color
+                    </label>
+                    <input
+                        type="color"
+                        id="edit-badge-color"
+                        name="badge_color"
+                        value={badgeColor}
+                        onChange={(e) => setBadgeColor(e.target.value)}
+                        className="w-full h-10 px-1 py-1 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        id="edit-active"
+                        name="is_active"
+                        checked={isActive}
+                        onChange={(e) => setIsActive(e.target.checked)}
+                        className="rounded border-border text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="edit-active" className="text-sm font-medium text-on-surface">
+                        Active (users can earn this milestone)
+                    </label>
+                </div>
+
+                <div className="flex items-center gap-4 pt-4 border-t border-border">
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save size={20} />
+                                Save Changes
+                            </>
+                        )}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="btn btn-ghost"
+                        disabled={isSubmitting}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </Modal>
+    )
+}
+
 export default function MilestonesClient({ milestones: initialMilestones }: MilestonesClientProps) {
     const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones)
     const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -342,127 +538,13 @@ export default function MilestonesClient({ milestones: initialMilestones }: Mile
 
             {/* Edit Modal */}
             {editingMilestone && (
-                <Modal
-                    isOpen={!!editingMilestone}
-                    onClose={() => !isSubmitting && setEditingMilestone(null)}
-                    title="Edit Milestone"
-                >
-                    <form onSubmit={handleUpdateMilestone} className="space-y-6">
-                        <input type="hidden" name="id" value={editingMilestone.id} />
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label htmlFor="edit-title" className="block text-sm font-semibold text-on-surface mb-2">
-                                    Milestone Title *
-                                </label>
-                                <input
-                                    type="text"
-                                    id="edit-title"
-                                    name="title"
-                                    required
-                                    defaultValue={editingMilestone.title}
-                                    className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="edit-sessions" className="block text-sm font-semibold text-on-surface mb-2">
-                                    Sessions Required *
-                                </label>
-                                <input
-                                    type="number"
-                                    id="edit-sessions"
-                                    name="session_threshold"
-                                    required
-                                    min="1"
-                                    defaultValue={editingMilestone.session_threshold}
-                                    className="w-full h-10 px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="edit-badge-icon" className="block text-sm font-semibold text-on-surface mb-2">
-                                Icon (Emoji) *
-                            </label>
-                            <Select
-                                id="edit-badge-icon"
-                                name="badge_icon"
-                                options={emojiSelectOptions}
-                                defaultValue={editingMilestone.badge_icon}
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="edit-description" className="block text-sm font-semibold text-on-surface mb-2">
-                                Description *
-                            </label>
-                            <textarea
-                                id="edit-description"
-                                name="description"
-                                rows={3}
-                                required
-                                defaultValue={editingMilestone.description}
-                                className="w-full px-3 py-2 rounded-lg border border-border bg-backplate text-on-surface placeholder:text-neutral-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-y"
-                            ></textarea>
-                        </div>
-
-                        <div>
-                            <label htmlFor="edit-badge-color" className="block text-sm font-semibold text-on-surface mb-2">
-                                Badge Color
-                            </label>
-                            <input
-                                type="color"
-                                id="edit-badge-color"
-                                name="badge_color"
-                                defaultValue={editingMilestone.badge_color || '#10b981'}
-                                className="w-full h-10 px-1 py-1 rounded-lg border border-border bg-backplate text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                id="edit-active"
-                                name="is_active"
-                                defaultChecked={editingMilestone.is_active}
-                                className="rounded border-border text-primary focus:ring-primary"
-                            />
-                            <label htmlFor="edit-active" className="text-sm font-medium text-on-surface">
-                                Active (users can earn this milestone)
-                            </label>
-                        </div>
-
-                        <div className="flex items-center gap-4 pt-4 border-t border-border">
-                            <button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="btn btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save size={20} />
-                                        Save Changes
-                                    </>
-                                )}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setEditingMilestone(null)}
-                                className="btn btn-ghost"
-                                disabled={isSubmitting}
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
+                <EditMilestoneModal
+                    milestone={editingMilestone}
+                    emojiSelectOptions={emojiSelectOptions}
+                    isSubmitting={isSubmitting}
+                    onSubmit={handleUpdateMilestone}
+                    onClose={() => setEditingMilestone(null)}
+                />
             )}
 
             {/* Delete Confirmation Modal */}

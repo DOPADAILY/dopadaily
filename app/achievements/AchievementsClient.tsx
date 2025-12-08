@@ -4,6 +4,7 @@ import { Award, Lock, Check, TrendingUp } from 'lucide-react'
 import { useAchievements } from '@/hooks/queries'
 import { AchievementsSkeleton } from '@/components/SkeletonLoader'
 import EmptyState from '@/components/EmptyState'
+import AnimatedProgressBar from '@/components/AnimatedProgressBar'
 
 export default function AchievementsClient() {
   const { data, isLoading, error } = useAchievements()
@@ -43,11 +44,11 @@ export default function AchievementsClient() {
     <>
       {/* Progress Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
-        
+
         {/* Total Sessions */}
-        <div className="card">
+        <div className="card card-interactive animate-stagger-1">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
               <TrendingUp size={20} className="text-primary" />
             </div>
             <div>
@@ -58,7 +59,7 @@ export default function AchievementsClient() {
         </div>
 
         {/* Achievements Progress */}
-        <div className="card">
+        <div className="card card-interactive animate-stagger-2">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
               <Award size={20} className="text-success" />
@@ -69,20 +70,21 @@ export default function AchievementsClient() {
             </div>
           </div>
           <div className="mt-3">
-            <div className="h-2 bg-neutral-light/20 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-success transition-all duration-500"
-                style={{ width: `${totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0}%` }}
-              ></div>
-            </div>
+            <AnimatedProgressBar
+              value={unlockedCount}
+              max={totalCount || 1}
+              color="success"
+              showShimmer={unlockedCount > 0}
+              height="sm"
+            />
           </div>
         </div>
 
         {/* Next Milestone */}
         {nextMilestone ? (
-          <div className="card">
+          <div className="card card-interactive animate-stagger-3">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center animate-pulse">
                 <Lock size={20} className="text-warning" />
               </div>
               <div className="flex-1 min-w-0">
@@ -94,10 +96,10 @@ export default function AchievementsClient() {
             </div>
           </div>
         ) : totalCount > 0 ? (
-          <div className="card">
+          <div className="card card-interactive animate-stagger-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                <Check size={20} className="text-primary" />
+                <Check size={20} className="text-primary animate-bounce-in" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-on-surface">All Unlocked!</p>
@@ -106,7 +108,7 @@ export default function AchievementsClient() {
             </div>
           </div>
         ) : (
-          <div className="card">
+          <div className="card card-interactive animate-stagger-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-neutral-light/20 flex items-center justify-center">
                 <Award size={20} className="text-on-surface-secondary" />
@@ -121,13 +123,13 @@ export default function AchievementsClient() {
       </div>
 
       {/* Achievements Grid */}
-      <h2 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-2">
+      <h2 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-2 animate-stagger-4">
         <Award size={24} className="text-primary" />
         All Achievements
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {milestones?.map((milestone) => {
+        {milestones?.map((milestone, index) => {
           const isUnlocked = unlockedMilestoneIds.has(milestone.id)
           const achievement = unlockedAchievements?.find(a => a.milestone_id === milestone.id)
           const progress = Math.min(100, ((totalSessions || 0) / milestone.session_threshold) * 100)
@@ -136,19 +138,19 @@ export default function AchievementsClient() {
           return (
             <div
               key={milestone.id}
-              className={`card transition-all duration-300 ${
-                isUnlocked ? 'border-2 border-success' : isInProgress ? 'border-2 border-warning/30' : 'opacity-60'
-              }`}
+              className={`card card-interactive card-shimmer transition-all duration-300 animate-scale-fade-in ${isUnlocked ? 'border-2 border-success' : isInProgress ? 'border-2 border-warning/30' : 'opacity-60 hover:opacity-80'
+                }`}
+              style={{ animationDelay: `${index * 0.05}s` }}
             >
               {/* Badge */}
               <div className="flex items-start gap-4 mb-4">
-                <div 
-                  className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl shrink-0 transition-all duration-300 ${
-                    isUnlocked ? 'shadow-lg' : 'grayscale opacity-50'
-                  }`}
-                  style={{ 
+                <div
+                  className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl shrink-0 transition-all duration-300 ${isUnlocked ? 'shadow-lg animate-bounce-in' : 'grayscale opacity-50'
+                    }`}
+                  style={{
                     backgroundColor: isUnlocked ? milestone.badge_color + '20' : '#e9ddcf',
-                    border: isUnlocked ? `3px solid ${milestone.badge_color}` : '2px solid #d4c9be'
+                    border: isUnlocked ? `3px solid ${milestone.badge_color}` : '2px solid #d4c9be',
+                    animationDelay: `${index * 0.1}s`
                   }}
                 >
                   {isUnlocked ? milestone.badge_icon : '🔒'}
@@ -156,7 +158,7 @@ export default function AchievementsClient() {
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-on-surface mb-1 flex items-center gap-2">
                     {milestone.title}
-                    {isUnlocked && <Check size={16} className="text-success" />}
+                    {isUnlocked && <Check size={16} className="text-success animate-scale-in" />}
                   </h3>
                   <p className="text-xs text-on-surface-secondary line-clamp-2">
                     {milestone.description}
@@ -166,7 +168,7 @@ export default function AchievementsClient() {
 
               {/* Progress/Status */}
               {isUnlocked ? (
-                <div className="bg-success/10 border border-success/30 rounded-lg px-3 py-2">
+                <div className="bg-success/10 border border-success/30 rounded-lg px-3 py-2 animate-fade-in">
                   <p className="text-xs text-success font-semibold">
                     ✓ Unlocked {achievement ? new Date(achievement.unlocked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                   </p>
@@ -181,12 +183,13 @@ export default function AchievementsClient() {
                       {Math.round(progress)}%
                     </p>
                   </div>
-                  <div className="h-2 bg-neutral-light/20 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-warning transition-all duration-500"
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  </div>
+                  <AnimatedProgressBar
+                    value={progress}
+                    max={100}
+                    color="warning"
+                    showShimmer={isInProgress}
+                    height="sm"
+                  />
                 </div>
               )}
             </div>
