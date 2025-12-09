@@ -5,6 +5,7 @@ import { User, Settings, Save, Loader2, Crown, CreditCard, ExternalLink, Trash2,
 import { useRouter } from 'next/navigation'
 import ConfirmModal from '@/components/ConfirmModal'
 import { deleteOwnAccount } from './actions'
+import { createClient } from '@/utils/supabase/client'
 import Toast from '@/components/Toast'
 import { useProfile, useUpdateProfile, useSubscription, useIsPremium, redirectToCheckout, redirectToPortal } from '@/hooks/queries'
 import { SettingsSkeleton } from '@/components/SkeletonLoader'
@@ -78,6 +79,9 @@ export default function SettingsClient({ userEmail }: SettingsClientProps) {
     try {
       const result = await deleteOwnAccount()
       if (result.success) {
+        // Sign out to clear the session
+        const supabase = createClient()
+        await supabase.auth.signOut()
         // Redirect to login page after successful deletion
         router.push('/login?message=Account deleted successfully')
       } else {
