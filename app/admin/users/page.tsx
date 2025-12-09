@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users as UsersIcon, ShieldCheck, Shield, Ban, CheckCircle, Search, Eye } from 'lucide-react'
+import { Users as UsersIcon, ShieldCheck, Shield, Ban, CheckCircle, Search, Eye, Crown } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/UserMenu'
@@ -71,7 +71,7 @@ export default function UsersPage() {
         .eq('id', user.id)
         .single()
 
-      if (profileData?.role !== 'admin') {
+      if (profileData?.role !== 'admin' && profileData?.role !== 'super_admin') {
         router.push('/dashboard')
         return
       }
@@ -223,13 +223,16 @@ export default function UsersPage() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${u.role === 'admin'
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-neutral-medium/10 text-neutral-medium'
-                            }`}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                            u.role === 'super_admin'
+                              ? 'bg-warning/10 text-warning'
+                              : u.role === 'admin'
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-neutral-medium/10 text-neutral-medium'
+                          }`}
                         >
-                          {u.role === 'admin' ? <ShieldCheck size={14} /> : <Shield size={14} />}
-                          {u.role || 'user'}
+                          {u.role === 'super_admin' ? <Crown size={14} /> : u.role === 'admin' ? <ShieldCheck size={14} /> : <Shield size={14} />}
+                          {u.role === 'super_admin' ? 'Super Admin' : u.role || 'user'}
                         </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -282,7 +285,10 @@ export default function UsersPage() {
                             <Eye size={12} />
                             <span className="hidden sm:inline">View</span>
                           </button>
-                          {u.id !== currentUser?.id && (
+                          {/* Super admins cannot be modified by anyone */}
+                          {u.role === 'super_admin' ? (
+                            <span className="text-xs text-on-surface-secondary italic ml-2">Protected</span>
+                          ) : u.id !== currentUser?.id && (
                             <>
                               <span className="text-neutral-medium">•</span>
                               <button

@@ -12,7 +12,7 @@ export async function isAdmin() {
         .eq('id', user.id)
         .single()
 
-    return profile?.role === 'admin'
+    return profile?.role === 'admin' || profile?.role === 'super_admin'
 }
 
 export async function requireAdmin() {

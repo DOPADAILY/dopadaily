@@ -50,7 +50,7 @@ export async function updateReminder(formData: FormData) {
     .eq('id', id)
     .single()
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
   const isOwner = reminder?.created_by === user.id
 
   if (!isAdmin && !isOwner) {
@@ -95,7 +95,7 @@ export async function deleteReminder(id: number) {
     .eq('id', id)
     .single()
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
   const isOwner = reminder?.created_by === user.id
 
   if (!isAdmin && !isOwner) {

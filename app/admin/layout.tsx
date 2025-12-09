@@ -20,8 +20,8 @@ export default async function AdminLayout({
     .eq('id', user.id)
     .single()
 
-  // If not admin, redirect to dashboard
-  if (!profile || profile.role !== 'admin') {
+  // If not admin or super_admin, redirect to dashboard
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
     redirect('/dashboard')
   }
 

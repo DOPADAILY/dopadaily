@@ -53,6 +53,11 @@ async function toggleUserRole(input: ToggleUserRoleInput): Promise<{ success: bo
         return { success: false, error: 'Not authenticated' }
     }
 
+    // Prevent modifying super_admin role
+    if (input.currentRole === 'super_admin') {
+        return { success: false, error: 'Cannot modify super admin role' }
+    }
+
     const newRole = input.currentRole === 'admin' ? 'user' : 'admin'
 
     const { error } = await supabase
@@ -91,6 +96,17 @@ async function banUser(input: BanUserInput): Promise<{ success: boolean; error?:
 
     if (!user) {
         return { success: false, error: 'Not authenticated' }
+    }
+
+    // Check if target is a super_admin (protected)
+    const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', input.userId)
+        .single()
+
+    if (targetProfile?.role === 'super_admin') {
+        return { success: false, error: 'Cannot ban a super admin' }
     }
 
     let bannedUntil: string | null = null

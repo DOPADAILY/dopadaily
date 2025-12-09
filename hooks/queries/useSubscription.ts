@@ -64,8 +64,8 @@ async function fetchSubscription(): Promise<SubscriptionData | null> {
 // Check if user has premium access (includes admin bypass)
 function hasFullAccess(data: SubscriptionData | null | undefined): boolean {
   if (!data) return false
-  // Admins always have full access
-  if (data.role === 'admin') return true
+  // Admins and super_admins always have full access
+  if (data.role === 'admin' || data.role === 'super_admin') return true
   // Otherwise check subscription status
   return checkIsPremium(data.subscription_status)
 }
@@ -89,7 +89,7 @@ export function useSubscription() {
 export function useIsPremium() {
   const { data, isLoading } = useSubscription()
   const isPremium = hasFullAccess(data)
-  const isAdmin = data?.role === 'admin'
+  const isAdmin = data?.role === 'admin' || data?.role === 'super_admin'
 
   return {
     isPremium,
@@ -109,7 +109,7 @@ export function usePlanFeatures() {
     features: isPremium ? PLANS.premium.features : getPlanFeatures(data?.subscription_status),
     isLoading,
     isPremium,
-    isAdmin: data?.role === 'admin',
+    isAdmin: data?.role === 'admin' || data?.role === 'super_admin',
   }
 }
 
@@ -120,7 +120,7 @@ export function useFeatureLimit(
 ) {
   const { data, isLoading } = useSubscription()
   const isPremium = hasFullAccess(data)
-  const isAdmin = data?.role === 'admin'
+  const isAdmin = data?.role === 'admin' || data?.role === 'super_admin'
 
   // Admins and premium users have no limits
   if (isPremium) {

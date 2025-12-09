@@ -61,7 +61,7 @@ export async function deleteComment(commentId: number, postId: string) {
     .eq('id', user.id)
     .single()
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
   const isOwner = comment.user_id === user.id
 
   if (!isOwner && !isAdmin) {
@@ -176,7 +176,7 @@ export async function deletePost(postId: number) {
     .eq('id', user.id)
     .single()
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
   const isOwner = post.user_id === user.id
 
   if (!isOwner && !isAdmin) {

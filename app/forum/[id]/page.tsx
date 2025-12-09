@@ -40,7 +40,7 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   // Check if current user is author or admin
   const isAuthor = post.user_id === user.id
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
 
   // Fetch comments for this post
   const { data: comments } = await supabase

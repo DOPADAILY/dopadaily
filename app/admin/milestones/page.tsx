@@ -38,7 +38,7 @@ export default function MilestonesPage() {
                 .eq('id', user.id)
                 .single()
 
-            if (profileData?.role !== 'admin') {
+            if (profileData?.role !== 'admin' && profileData?.role !== 'super_admin') {
                 router.push('/dashboard')
                 return
             }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, User, Mail, Calendar, Clock, TrendingUp, MessageSquare, Target, Shield, Ban, AlertCircle } from 'lucide-react'
+import { X, User, Mail, Calendar, Clock, TrendingUp, MessageSquare, Target, Shield, Ban, AlertCircle, Crown } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import UserAvatar from './UserAvatar'
 
@@ -231,6 +231,12 @@ export default function UserDetailModal({ userId, onClose }: UserDetailModalProp
                   <h3 className="text-xl font-bold text-on-surface">
                     {user.full_name || user.username || 'Anonymous'}
                   </h3>
+                  {user.role === 'super_admin' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                      <Crown size={12} />
+                      Super Admin
+                    </span>
+                  )}
                   {user.role === 'admin' && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                       <Shield size={12} />

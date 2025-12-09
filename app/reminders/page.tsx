@@ -42,7 +42,7 @@ export default async function RemindersPage() {
           <div className="xl:col-span-2 space-y-6">
             <RemindersClient 
               userId={user.id}
-              isAdmin={profile?.role === 'admin'}
+              isAdmin={profile?.role === 'admin' || profile?.role === 'super_admin'}
             />
           </div>
 
@@ -92,7 +92,7 @@ export default async function RemindersPage() {
                   />
                 </div>
 
-                {profile?.role === 'admin' && (
+                {(profile?.role === 'admin' || profile?.role === 'super_admin') && (
                   <div className="p-3 bg-backplate rounded-lg border border-border">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
