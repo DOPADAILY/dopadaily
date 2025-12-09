@@ -1,18 +1,21 @@
 'use client'
 
 import { useAudioStore } from '@/stores/audioStore'
-import { Play, Pause, Volume2, VolumeX, X, Maximize2 } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, X, Maximize2, SkipBack, SkipForward } from 'lucide-react'
 
 export default function MiniPlayer() {
     const {
         currentSound,
+        playlist,
+        currentIndex,
         isPlaying,
         currentTime,
         duration,
-        volume,
         isMuted,
         togglePlayPause,
         toggleMute,
+        playNext,
+        playPrevious,
         openModal,
         cleanup
     } = useAudioStore()
@@ -58,7 +61,18 @@ export default function MiniPlayer() {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
+                    {/* Previous */}
+                    {playlist.length > 1 && (
+                        <button
+                            onClick={playPrevious}
+                            className="p-2 hover:bg-backplate rounded-full transition-colors hidden sm:flex"
+                            title="Previous"
+                        >
+                            <SkipBack size={16} className="text-on-surface" />
+                        </button>
+                    )}
+
                     {/* Play/Pause */}
                     <button
                         onClick={togglePlayPause}
@@ -66,6 +80,17 @@ export default function MiniPlayer() {
                     >
                         {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
                     </button>
+
+                    {/* Next */}
+                    {playlist.length > 1 && (
+                        <button
+                            onClick={playNext}
+                            className="p-2 hover:bg-backplate rounded-full transition-colors hidden sm:flex"
+                            title="Next"
+                        >
+                            <SkipForward size={16} className="text-on-surface" />
+                        </button>
+                    )}
 
                     {/* Volume */}
                     <button
@@ -78,6 +103,13 @@ export default function MiniPlayer() {
                             <Volume2 size={18} className="text-primary" />
                         )}
                     </button>
+
+                    {/* Track position indicator */}
+                    {playlist.length > 1 && (
+                        <span className="text-xs text-on-surface-secondary hidden md:block mx-1">
+                            {currentIndex + 1}/{playlist.length}
+                        </span>
+                    )}
 
                     {/* Expand */}
                     <button

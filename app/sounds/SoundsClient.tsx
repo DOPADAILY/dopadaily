@@ -45,7 +45,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
   const [filterCategory, setFilterCategory] = useState('')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
-  const { loadSound, isModalOpen, closeModal } = useAudioStore()
+  const { playFromPlaylist } = useAudioStore()
 
   // TanStack Query hooks
   const { data: sounds = [], isLoading, error } = useSounds()
@@ -85,7 +85,14 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
       return
     }
 
-    loadSound(sound)
+    // Get the playable sounds list (for premium: all filtered, for free: only free sounds)
+    const playableSounds = isPremium 
+      ? filteredSounds 
+      : filteredSounds.filter(s => isSoundFree(s.id))
+    
+    // Play from playlist with the current filtered list
+    playFromPlaylist(sound, playableSounds)
+    
     // Increment play count
     incrementPlayCount.mutate({ soundId: sound.id, currentCount: sound.play_count })
   }

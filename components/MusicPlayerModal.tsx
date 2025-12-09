@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Play, Pause, Volume2, VolumeX, Music, Repeat, Maximize2, Minimize2, Loader2 } from 'lucide-react'
+import { X, Play, Pause, Volume2, VolumeX, Music, Repeat, Repeat1, Maximize2, Minimize2, Loader2, SkipBack, SkipForward, Shuffle } from 'lucide-react'
 import { useAudioStore } from '@/stores/audioStore'
 
 export default function MusicPlayerModal() {
@@ -9,19 +9,25 @@ export default function MusicPlayerModal() {
 
     const {
         currentSound,
+        playlist,
+        currentIndex,
         isPlaying,
         isLoading,
         currentTime,
         duration,
         volume,
         isMuted,
-        isLooping,
+        loopMode,
+        isShuffled,
         isModalOpen,
         togglePlayPause,
         seek,
         setVolume: updateVolume,
         toggleMute,
-        toggleLoop,
+        cycleLoopMode,
+        toggleShuffle,
+        playNext,
+        playPrevious,
         closeModal
     } = useAudioStore()
 
@@ -191,69 +197,124 @@ export default function MusicPlayerModal() {
                 </div>
 
                 {/* Controls */}
-                <div className="px-6 py-5 flex items-center justify-between gap-4">
-                    {/* Loop toggle */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            toggleLoop()
-                        }}
-                        className={`p-3 rounded-full transition-all ${isLooping
-                            ? 'bg-primary/20 text-primary'
-                            : 'hover:bg-backplate text-on-surface-secondary'
-                            }`}
-                        title={isLooping ? 'Looping enabled' : 'Looping disabled'}
-                    >
-                        <Repeat size={20} />
-                    </button>
-
-                    {/* Play/Pause button */}
-                    <div className="relative">
-                        {isPlaying && (
-                            <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" />
-                        )}
+                <div className="px-6 py-5">
+                    {/* Main playback controls */}
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        {/* Shuffle */}
                         <button
-                            onClick={togglePlayPause}
-                            disabled={isLoading}
-                            className={`relative p-5 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-wait ${isPlaying ? 'btn-glow hover:shadow-xl' : 'hover:scale-105 hover:shadow-xl'
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                toggleShuffle()
+                            }}
+                            className={`p-2.5 rounded-full transition-all ${isShuffled
+                                ? 'bg-primary/20 text-primary'
+                                : 'hover:bg-backplate text-on-surface-secondary'
                                 }`}
+                            title={isShuffled ? 'Shuffle on' : 'Shuffle off'}
                         >
-                            {isLoading ? (
-                                <Loader2 size={28} className="animate-spin" />
-                            ) : isPlaying ? (
-                                <Pause size={28} />
+                            <Shuffle size={18} />
+                        </button>
+
+                        {/* Previous */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                playPrevious()
+                            }}
+                            disabled={isLoading || playlist.length <= 1}
+                            className="p-3 hover:bg-backplate rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Previous"
+                        >
+                            <SkipBack size={22} className="text-on-surface" />
+                        </button>
+
+                        {/* Play/Pause button */}
+                        <div className="relative">
+                            {isPlaying && (
+                                <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" />
+                            )}
+                            <button
+                                onClick={togglePlayPause}
+                                disabled={isLoading}
+                                className={`relative p-5 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-wait ${isPlaying ? 'btn-glow hover:shadow-xl' : 'hover:scale-105 hover:shadow-xl'
+                                    }`}
+                            >
+                                {isLoading ? (
+                                    <Loader2 size={28} className="animate-spin" />
+                                ) : isPlaying ? (
+                                    <Pause size={28} />
+                                ) : (
+                                    <Play size={28} className="ml-1" />
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Next */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                playNext()
+                            }}
+                            disabled={isLoading || playlist.length <= 1}
+                            className="p-3 hover:bg-backplate rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Next"
+                        >
+                            <SkipForward size={22} className="text-on-surface" />
+                        </button>
+
+                        {/* Loop mode */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                cycleLoopMode()
+                            }}
+                            className={`p-2.5 rounded-full transition-all ${loopMode !== 'none'
+                                ? 'bg-primary/20 text-primary'
+                                : 'hover:bg-backplate text-on-surface-secondary'
+                                }`}
+                            title={
+                                loopMode === 'all' ? 'Loop playlist' : 
+                                loopMode === 'one' ? 'Loop track' : 
+                                'Loop off'
+                            }
+                        >
+                            {loopMode === 'one' ? (
+                                <Repeat1 size={18} />
                             ) : (
-                                <Play size={28} className="ml-1" />
+                                <Repeat size={18} />
                             )}
                         </button>
                     </div>
 
-                    {/* Volume control */}
-                    <div className="flex items-center gap-2">
+                    {/* Secondary controls - Volume */}
+                    <div className="flex items-center justify-center gap-3">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation()
                                 toggleMute()
                             }}
-                            className="p-3 hover:bg-backplate rounded-full transition-colors"
+                            className="p-2 hover:bg-backplate rounded-full transition-colors"
                             title={isMuted ? 'Unmute' : 'Mute'}
                         >
                             {isMuted ? (
-                                <VolumeX size={20} className="text-on-surface-secondary" />
+                                <VolumeX size={18} className="text-on-surface-secondary" />
                             ) : (
-                                <Volume2 size={20} className="text-primary" />
+                                <Volume2 size={18} className="text-primary" />
                             )}
                         </button>
-                        {isExpanded && (
-                            <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.01"
-                                value={isMuted ? 0 : volume}
-                                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                                className="w-20 accent-primary"
-                            />
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={isMuted ? 0 : volume}
+                            onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                            className="w-24 accent-primary"
+                        />
+                        {playlist.length > 1 && (
+                            <span className="text-xs text-on-surface-secondary ml-2">
+                                {currentIndex + 1} / {playlist.length}
+                            </span>
                         )}
                     </div>
                 </div>
