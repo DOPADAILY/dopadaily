@@ -42,8 +42,11 @@ export default function MiniPlayer() {
             </div>
 
             <div className="px-4 py-3 flex items-center gap-4">
-                {/* Sound info */}
-                <div className="flex-1 min-w-0 flex items-center gap-3">
+                {/* Sound info - clickable to open modal */}
+                <button
+                    onClick={openModal}
+                    className="flex-1 min-w-0 flex items-center gap-3 text-left hover:opacity-80 transition-opacity"
+                >
                     <div className="shrink-0 w-12 h-12 rounded-lg bg-linear-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
                         <span className="text-primary font-bold text-xs">
                             {currentSound.category.slice(0, 2).toUpperCase()}
@@ -58,7 +61,7 @@ export default function MiniPlayer() {
                             {formatTime(currentTime)} / {formatTime(duration)}
                         </p>
                     </div>
-                </div>
+                </button>
 
                 {/* Controls */}
                 <div className="flex items-center gap-1 sm:gap-2">
