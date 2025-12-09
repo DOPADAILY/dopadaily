@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users as UsersIcon, ShieldCheck, Shield, Ban, CheckCircle, Search, Eye, Crown } from 'lucide-react'
+import { Users as UsersIcon, ShieldCheck, Shield, Ban, CheckCircle, Search, Eye, Crown, Trash2, Loader2 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/UserMenu'
@@ -21,6 +21,7 @@ import {
   adminUsersKeys,
   type AdminUser,
 } from '@/hooks/queries'
+import { deleteUserAccount } from '@/app/settings/actions'
 
 export default function UsersPage() {
   const router = useRouter()
@@ -34,6 +35,8 @@ export default function UsersPage() {
   } | null>(null)
   const [banningUser, setBanningUser] = useState<AdminUser | null>(null)
   const [viewingUser, setViewingUser] = useState<string | null>(null)
+  const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null)
 
   // TanStack Query hooks
@@ -227,9 +230,9 @@ export default function UsersPage() {
                             u.role === 'super_admin'
                               ? 'bg-warning/10 text-warning'
                               : u.role === 'admin'
-                                ? 'bg-primary/10 text-primary'
-                                : 'bg-neutral-medium/10 text-neutral-medium'
-                          }`}
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-neutral-medium/10 text-neutral-medium'
+                            }`}
                         >
                           {u.role === 'super_admin' ? <Crown size={14} /> : u.role === 'admin' ? <ShieldCheck size={14} /> : <Shield size={14} />}
                           {u.role === 'super_admin' ? 'Super Admin' : u.role || 'user'}
@@ -318,6 +321,15 @@ export default function UsersPage() {
                                   Ban
                                 </button>
                               )}
+                              <span className="text-neutral-medium">•</span>
+                              <button
+                                onClick={() => setDeletingUser(u)}
+                                className="text-xs text-error hover:underline flex items-center gap-1"
+                                title="Delete user"
+                              >
+                                <Trash2 size={12} />
+                                Delete
+                              </button>
                             </>
                           )}
                         </div>
@@ -452,6 +464,50 @@ export default function UsersPage() {
         <UserDetailModal
           userId={viewingUser}
           onClose={() => setViewingUser(null)}
+        />
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {deletingUser && (
+        <ConfirmModal
+          isOpen={!!deletingUser}
+          onClose={() => {
+            if (!isDeleting) {
+              setDeletingUser(null)
+            }
+          }}
+          onConfirm={async () => {
+            setIsDeleting(true)
+            try {
+              const result = await deleteUserAccount(deletingUser.id)
+              if (result.success) {
+                setToast({
+                  message: `User "${deletingUser.username || deletingUser.email}" deleted successfully`,
+                  variant: 'success'
+                })
+                queryClient.invalidateQueries({ queryKey: adminUsersKeys.lists() })
+                setDeletingUser(null)
+              } else {
+                setToast({
+                  message: result.error || 'Failed to delete user',
+                  variant: 'error'
+                })
+              }
+            } catch (error: any) {
+              console.error('Error deleting user:', error)
+              setToast({
+                message: error?.message || 'Failed to delete user',
+                variant: 'error'
+              })
+            } finally {
+              setIsDeleting(false)
+            }
+          }}
+          isLoading={isDeleting}
+          title="Delete User Account?"
+          message={`Are you sure you want to permanently delete "${deletingUser.username || deletingUser.email}"? This will remove all their data including focus sessions, notes, forum posts, and achievements. This action cannot be undone.`}
+          confirmText="Delete User"
+          variant="danger"
         />
       )}
 

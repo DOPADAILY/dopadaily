@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { User, Settings, Save, Loader2, Crown, CreditCard, ExternalLink } from 'lucide-react'
+import { User, Settings, Save, Loader2, Crown, CreditCard, ExternalLink, Trash2, AlertTriangle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import ConfirmModal from '@/components/ConfirmModal'
+import { deleteOwnAccount } from './actions'
 import Toast from '@/components/Toast'
 import { useProfile, useUpdateProfile, useSubscription, useIsPremium, redirectToCheckout, redirectToPortal } from '@/hooks/queries'
 import { SettingsSkeleton } from '@/components/SkeletonLoader'
@@ -15,9 +18,13 @@ interface SettingsClientProps {
 type Tab = 'profile' | 'preferences' | 'subscription'
 
 export default function SettingsClient({ userEmail }: SettingsClientProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('profile')
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [isPortalLoading, setIsPortalLoading] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const profileFormRef = useRef<HTMLFormElement>(null)
   const preferencesFormRef = useRef<HTMLFormElement>(null)
 
@@ -62,6 +69,28 @@ export default function SettingsClient({ userEmail }: SettingsClientProps) {
         },
       }
     )
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return
+
+    setIsDeleting(true)
+    try {
+      const result = await deleteOwnAccount()
+      if (result.success) {
+        // Redirect to login page after successful deletion
+        router.push('/login?message=Account deleted successfully')
+      } else {
+        setToast({ message: result.error || 'Failed to delete account', type: 'error' })
+        setShowDeleteModal(false)
+      }
+    } catch (error) {
+      setToast({ message: 'An unexpected error occurred', type: 'error' })
+      setShowDeleteModal(false)
+    } finally {
+      setIsDeleting(false)
+      setDeleteConfirmText('')
+    }
   }
 
   // Only show skeleton on initial load when there's no cached data
@@ -476,6 +505,114 @@ export default function SettingsClient({ userEmail }: SettingsClientProps) {
                 </Link>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Danger Zone - Always visible at the bottom */}
+      <div className="card border-error/30 mt-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-error" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-on-surface">Danger Zone</h3>
+            <p className="text-sm text-on-surface-secondary">Irreversible actions</p>
+          </div>
+        </div>
+
+        <div className="p-4 bg-error/5 border border-error/20 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h4 className="font-semibold text-on-surface">Delete Account</h4>
+              <p className="text-sm text-on-surface-secondary">
+                Permanently delete your account and all associated data. This action cannot be undone.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="btn bg-error text-white hover:bg-error/90 shrink-0"
+            >
+              <Trash2 size={18} />
+              Delete Account
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface-elevated rounded-xl shadow-xl max-w-md w-full p-6 animate-scale-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-error" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-on-surface">Delete Account</h3>
+                <p className="text-sm text-on-surface-secondary">This action is permanent</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-on-surface-secondary mb-4">
+                This will permanently delete your account and all data including:
+              </p>
+              <ul className="text-sm text-on-surface-secondary space-y-1 mb-4">
+                <li>• Your profile and settings</li>
+                <li>• All focus sessions and statistics</li>
+                <li>• All notes and reminders</li>
+                <li>• All forum posts and comments</li>
+                <li>• Achievement progress</li>
+              </ul>
+              <p className="text-sm text-error font-medium">
+                This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-on-surface mb-2">
+                Type <span className="text-error font-mono">DELETE</span> to confirm
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                className="input w-full"
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeleteConfirmText('')
+                }}
+                disabled={isDeleting}
+                className="btn btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                className="btn bg-error text-white hover:bg-error/90 flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={18} />
+                    Delete Forever
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

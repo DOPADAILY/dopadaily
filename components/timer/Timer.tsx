@@ -195,18 +195,18 @@ export default function Timer() {
               <div className="absolute inset-[-8px] rounded-full border-2 border-primary/30 animate-pulse" />
             </>
           )}
-          <button
-            onClick={toggleTimer}
+        <button
+          onClick={toggleTimer}
             className={`relative w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center transition-all active:scale-95 shadow-md cursor-pointer ${
               isActive ? 'btn-glow shadow-lg' : 'hover:shadow-lg hover:scale-105'
             }`}
-          >
-            {isActive ? (
-              <Pause size={28} fill="currentColor" />
-            ) : (
-              <Play size={28} fill="currentColor" className="ml-0.5" />
-            )}
-          </button>
+        >
+          {isActive ? (
+            <Pause size={28} fill="currentColor" />
+          ) : (
+            <Play size={28} fill="currentColor" className="ml-0.5" />
+          )}
+        </button>
         </div>
 
         <button

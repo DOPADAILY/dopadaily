@@ -106,20 +106,20 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-8">
                 <div className="animate-stagger-2">
-                    <StatCard
-                        label="Focus Sessions Today"
-                        value={`${todaySessionCount || 0} / ${profile?.daily_goal || 8}`}
-                        change={todaySessionCount ? `${todayTotalMinutes} minutes` : 'Start your first session!'}
-                        changeType={todaySessionCount && todaySessionCount >= (profile?.daily_goal || 8) ? 'positive' : 'neutral'}
-                    />
+                <StatCard
+                    label="Focus Sessions Today"
+                    value={`${todaySessionCount || 0} / ${profile?.daily_goal || 8}`}
+                    change={todaySessionCount ? `${todayTotalMinutes} minutes` : 'Start your first session!'}
+                    changeType={todaySessionCount && todaySessionCount >= (profile?.daily_goal || 8) ? 'positive' : 'neutral'}
+                />
                 </div>
                 <div className="animate-stagger-3">
-                    <StatCard
-                        label="Total Time This Week"
-                        value={weekTotalHours > 0 ? `${weekTotalHours}h ${weekRemainingMinutes}m` : `${weekTotalMinutes}m`}
-                        change={weekSessionCount > 0 ? `${weekSessionCount} sessions` : 'Time to focus'}
-                        changeType={weekSessionCount > 0 ? 'positive' : 'neutral'}
-                    />
+                <StatCard
+                    label="Total Time This Week"
+                    value={weekTotalHours > 0 ? `${weekTotalHours}h ${weekRemainingMinutes}m` : `${weekTotalMinutes}m`}
+                    change={weekSessionCount > 0 ? `${weekSessionCount} sessions` : 'Time to focus'}
+                    changeType={weekSessionCount > 0 ? 'positive' : 'neutral'}
+                />
                 </div>
                 <div className="animate-stagger-4"><StatCard
                     label="Your Posts"
@@ -128,12 +128,12 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
                     changeType="neutral"
                 /></div>
                 <div className="animate-stagger-5">
-                    <StatCard
-                        label="Current Streak"
-                        value={`${streak} ${streak === 1 ? 'day' : 'days'}`}
-                        change={streak > 0 ? 'Keep it going! 🔥' : 'Start today!'}
-                        changeType={streak > 0 ? 'positive' : 'neutral'}
-                    />
+                <StatCard
+                    label="Current Streak"
+                    value={`${streak} ${streak === 1 ? 'day' : 'days'}`}
+                    change={streak > 0 ? 'Keep it going! 🔥' : 'Start today!'}
+                    changeType={streak > 0 ? 'positive' : 'neutral'}
+                />
                 </div>
             </div>
 

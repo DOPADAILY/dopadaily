@@ -1,95 +1,113 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { revalidatePath } from 'next/cache'
 
-export async function updateProfile(formData: FormData) {
+// Delete user's own account
+export async function deleteOwnAccount(): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login?message=You must be logged in')
+    return { success: false, error: 'Not authenticated' }
   }
 
-  const username = formData.get('username') as string | null
-  const fullName = formData.get('full_name') as string | null
-  const dailyGoal = formData.get('daily_goal') as string | null
-  const defaultFocusDuration = formData.get('default_focus_duration') as string | null
-  const defaultBreakDuration = formData.get('default_break_duration') as string | null
-
-  // Build update object dynamically based on what fields are present
-  const updates: any = {
-    updated_at: new Date().toISOString(),
-  }
-
-  // Handle profile fields (username, full_name)
-  if (username !== null) {
-    if (username.trim().length < 3) {
-      return { error: 'Username must be at least 3 characters long' }
-    }
-
-    // Check if username is already taken (by someone else)
-    const { data: existingUser } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', username)
-      .neq('id', user.id)
-      .single()
-
-    if (existingUser) {
-      return { error: 'Username is already taken' }
-    }
-
-    updates.username = username
-  }
-
-  // If full_name is present in form (even if empty), update it
-  if (fullName !== null) {
-    updates.full_name = fullName.trim() || null
-  }
-
-  // Handle preference fields
-  if (dailyGoal) {
-    const goal = parseInt(dailyGoal)
-    if (isNaN(goal) || goal < 1 || goal > 20) {
-      return { error: 'Daily goal must be between 1 and 20 sessions' }
-    }
-    updates.daily_goal = goal
-  }
-
-  if (defaultFocusDuration) {
-    const duration = parseInt(defaultFocusDuration)
-    if (isNaN(duration) || duration < 5 || duration > 60) {
-      return { error: 'Focus duration must be between 5 and 60 minutes' }
-    }
-    updates.default_focus_duration = duration
-  }
-
-  if (defaultBreakDuration) {
-    const duration = parseInt(defaultBreakDuration)
-    if (isNaN(duration) || duration < 1 || duration > 30) {
-      return { error: 'Break duration must be between 1 and 30 minutes' }
-    }
-    updates.default_break_duration = duration
-  }
-
-  // Update profile
-  const { error } = await supabase
+  // Check if user is a super_admin (cannot delete themselves)
+  const { data: profile } = await supabase
     .from('profiles')
-    .update(updates)
+    .select('role')
     .eq('id', user.id)
+    .single()
+
+  if (profile?.role === 'super_admin') {
+    return { success: false, error: 'Super admins cannot delete their own account' }
+  }
+
+  // Use admin client to delete user from auth
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+
+  // Delete user (cascades to profiles and related data)
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id)
 
   if (error) {
-    console.error('Error updating profile:', error)
-    return { error: error.message || 'Failed to update profile' }
+    console.error('Error deleting account:', error)
+    return { success: false, error: error.message }
   }
 
-  revalidatePath('/settings')
-  revalidatePath('/dashboard')
-  revalidatePath('/focus')
   return { success: true }
 }
 
+// Admin: Delete another user's account
+export async function deleteUserAccount(userId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  // Check if current user is admin
+  const { data: adminProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (adminProfile?.role !== 'admin' && adminProfile?.role !== 'super_admin') {
+    return { success: false, error: 'Not authorized' }
+  }
+
+  // Check if target is a super_admin (cannot be deleted)
+  const { data: targetProfile } = await supabase
+    .from('profiles')
+    .select('role, username, email')
+    .eq('id', userId)
+    .single()
+
+  if (!targetProfile) {
+    return { success: false, error: 'User not found' }
+  }
+
+  if (targetProfile.role === 'super_admin') {
+    return { success: false, error: 'Cannot delete a super admin' }
+  }
+
+  // Prevent self-deletion via this route
+  if (userId === user.id) {
+    return { success: false, error: 'Use the settings page to delete your own account' }
+  }
+
+  // Use admin client to delete user from auth
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+
+  // Delete user (cascades to profiles and related data)
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
+
+  if (error) {
+    console.error('Error deleting user:', error)
+    return { success: false, error: error.message }
+  }
+
+  // Log admin activity
+  await supabase
+    .from('admin_audit_log')
+    .insert({
+      admin_id: user.id,
+      action: 'deleted_user',
+      target_table: 'profiles',
+      target_id: userId,
+      details: `Deleted user: ${targetProfile.username || targetProfile.email}`
+    })
+
+  revalidatePath('/admin/users')
+  return { success: true }
+}
