@@ -413,7 +413,7 @@ export default function AdminSoundsPage() {
                         <div className="min-w-0 flex-1">
                             <h1 className="text-base sm:text-lg font-bold text-on-surface flex items-center gap-2">
                                 <Music size={20} className="text-secondary" />
-                                Ambient Sounds
+                                Dopaflow Sound Library
                             </h1>
                         </div>
                     </div>
@@ -438,7 +438,7 @@ export default function AdminSoundsPage() {
                     <div className="min-w-0 flex-1">
                         <h1 className="text-base sm:text-lg font-bold text-on-surface flex items-center gap-2">
                             <Music size={20} className="text-secondary" />
-                            Ambient Sounds
+                            Dopaflow Sound Library
                         </h1>
                         <p className="text-on-surface-secondary text-xs hidden sm:block">
                             {filteredSounds.length} sound{filteredSounds.length !== 1 ? 's' : ''}
@@ -456,7 +456,7 @@ export default function AdminSoundsPage() {
                         <div>
                             <h2 className="text-2xl sm:text-3xl font-bold text-on-surface mb-1">Sound Library</h2>
                             <p className="text-on-surface-secondary text-sm">
-                                Manage ambient sounds • {sounds.length} total
+                                Manage Dopaflow sounds • {sounds.length} total
                             </p>
                         </div>
                         <button
@@ -504,7 +504,7 @@ export default function AdminSoundsPage() {
                         <p className="text-on-surface-secondary mb-6 max-w-md mx-auto">
                             {searchQuery || filterCategory
                                 ? 'Try adjusting your search or filters'
-                                : 'Upload your first ambient sound to get started'}
+                                : 'Upload your first Dopaflow sound to get started'}
                         </p>
                         {!searchQuery && !filterCategory && (
                             <button

@@ -152,7 +152,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
             <div className="min-w-0 flex-1">
               <h1 className="text-base sm:text-lg font-bold text-on-surface flex items-center gap-2">
                 <Headphones size={20} className="text-secondary" />
-                Ambient Sounds
+                Dopaflow Sound Library
               </h1>
               <p className="text-on-surface-secondary text-xs hidden sm:block">
                 Calming sounds to enhance your focus
@@ -183,7 +183,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
           <div className="min-w-0 flex-1">
             <h1 className="text-base sm:text-lg font-bold text-on-surface flex items-center gap-2">
               <Headphones size={20} className="text-secondary" />
-              Ambient Sounds
+              Dopaflow Sound Library
             </h1>
             <p className="text-on-surface-secondary text-xs hidden sm:block">
               Calming sounds to enhance your focus
@@ -200,7 +200,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
             Find Your Focus
           </h2>
           <p className="text-on-surface-secondary max-w-2xl mx-auto">
-            Discover carefully curated ambient sounds designed to enhance concentration and reduce distractions
+            Discover carefully curated Dopaflow sounds designed to enhance concentration and reduce distractions
           </p>
         </div>
 
@@ -253,7 +253,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
             <p className="text-on-surface-secondary max-w-md mx-auto">
               {searchQuery || filterCategory
                 ? 'Try adjusting your search or filters to find what you\'re looking for'
-                : 'Check back later for new ambient sounds to enhance your focus'}
+                : 'Check back later for new Dopaflow sounds to enhance your focus'}
             </p>
           </div>
         ) : (
@@ -359,7 +359,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
               <Headphones size={24} className="text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-on-surface mb-3">About Ambient Sounds</h3>
+              <h3 className="text-lg font-bold text-on-surface mb-3">About Dopaflow Sounds</h3>
               <p className="text-sm text-on-surface-secondary mb-3 leading-relaxed">
                 These carefully curated sounds are designed to help you focus, relax, and maintain productivity.
                 Each sound loops seamlessly and includes full playback controls.
@@ -387,7 +387,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
       {showUpgradeModal && (
         <UpgradePrompt
           feature="Full Sound Library"
-          description={`Free users can access ${FREE_SOUNDS_LIMIT} sounds. Upgrade to Premium for unlimited access to all ${sounds.length} ambient sounds.`}
+          description={`Free users can access ${FREE_SOUNDS_LIMIT} sounds. Upgrade to Premium for unlimited access to all ${sounds.length} Dopaflow sounds.`}
           variant="modal"
           onClose={() => setShowUpgradeModal(false)}
         />

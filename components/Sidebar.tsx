@@ -71,7 +71,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/focus', label: 'Focus Timer', icon: Brain },
     { href: '/notes', label: 'Notes', icon: FileText },
-    { href: '/sounds', label: 'Ambient Sounds', icon: Headphones },
+    { href: '/sounds', label: 'Dopaflow Sound Library', icon: Headphones },
     { href: '/achievements', label: 'Achievements', icon: Award },
     { href: '/forum', label: 'Community', icon: MessageSquare },
     { href: '/reminders', label: 'Reminders', icon: Bell },
