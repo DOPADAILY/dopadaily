@@ -86,13 +86,13 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
     }
 
     // Get the playable sounds list (for premium: all filtered, for free: only free sounds)
-    const playableSounds = isPremium 
-      ? filteredSounds 
+    const playableSounds = isPremium
+      ? filteredSounds
       : filteredSounds.filter(s => isSoundFree(s.id))
-    
+
     // Play from playlist with the current filtered list
     playFromPlaylist(sound, playableSounds)
-    
+
     // Increment play count
     incrementPlayCount.mutate({ soundId: sound.id, currentCount: sound.play_count })
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users as UsersIcon, ShieldCheck, Shield, Ban, CheckCircle, Search, Eye, Crown, Trash2, Loader2 } from 'lucide-react'
+import { Users as UsersIcon, ShieldCheck, Shield, Ban, CheckCircle, Search, Eye, Crown, Trash2, Loader2, MessageCircle } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import UserMenu from '@/components/UserMenu'
@@ -19,6 +19,7 @@ import {
   useBanUser,
   useUnbanUser,
   adminUsersKeys,
+  useCreateConversation,
   type AdminUser,
 } from '@/hooks/queries'
 import { deleteUserAccount } from '@/app/settings/actions'
@@ -44,6 +45,7 @@ export default function UsersPage() {
   const toggleRoleMutation = useToggleUserRole()
   const banMutation = useBanUser()
   const unbanMutation = useUnbanUser()
+  const createConversationMutation = useCreateConversation()
 
   // Filter users with useMemo
   const filteredUsers = useMemo(() => {
@@ -226,12 +228,11 @@ export default function UsersPage() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                            u.role === 'super_admin'
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${u.role === 'super_admin'
                               ? 'bg-warning/10 text-warning'
                               : u.role === 'admin'
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-neutral-medium/10 text-neutral-medium'
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-neutral-medium/10 text-neutral-medium'
                             }`}
                         >
                           {u.role === 'super_admin' ? <Crown size={14} /> : u.role === 'admin' ? <ShieldCheck size={14} /> : <Shield size={14} />}
@@ -287,6 +288,26 @@ export default function UsersPage() {
                           >
                             <Eye size={12} />
                             <span className="hidden sm:inline">View</span>
+                          </button>
+                          <span className="text-neutral-medium">•</span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const conversation = await createConversationMutation.mutateAsync(u.id)
+                                router.push(`/admin/messages?conversation=${conversation.id}`)
+                              } catch (error: any) {
+                                setToast({
+                                  message: error.message || 'Failed to create conversation',
+                                  variant: 'error'
+                                })
+                              }
+                            }}
+                            disabled={createConversationMutation.isPending}
+                            className="text-xs text-primary hover:underline flex items-center gap-1 disabled:opacity-50"
+                            title="Send message"
+                          >
+                            <MessageCircle size={12} />
+                            <span className="hidden sm:inline">Message</span>
                           </button>
                           {/* Super admins cannot be modified by anyone */}
                           {u.role === 'super_admin' ? (

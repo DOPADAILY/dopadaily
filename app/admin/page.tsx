@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
-import { Users, Award, Bell, TrendingUp, FileText, ShieldCheck, Music } from 'lucide-react'
+import { Users, Award, Bell, TrendingUp, FileText, ShieldCheck, Music, MessageCircle } from 'lucide-react'
 import UserMenu from '@/components/UserMenu'
 import { MobileMenuButton } from '@/components/MobileSidebar'
 import ActivityLog from './ActivityLog'
@@ -153,19 +153,7 @@ export default async function AdminDashboard() {
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-on-surface mb-4">Admin Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
-            <Link href="/admin/milestones" className="group card hover:border-primary transition-all hover:shadow-md">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Award size={24} className="text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-on-surface">Milestones</h3>
-                  <p className="text-xs text-on-surface-secondary">Manage achievements</p>
-                </div>
-              </div>
-            </Link>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
             <Link href="/admin/users" className="group card hover:border-secondary transition-all hover:shadow-md">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -174,6 +162,30 @@ export default async function AdminDashboard() {
                 <div>
                   <h3 className="font-semibold text-on-surface">Users</h3>
                   <p className="text-xs text-on-surface-secondary">Manage users</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/admin/messages" className="group card hover:border-primary transition-all hover:shadow-md">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <MessageCircle size={24} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-on-surface">Messages</h3>
+                  <p className="text-xs text-on-surface-secondary">User conversations</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/admin/milestones" className="group card hover:border-primary transition-all hover:shadow-md">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Award size={24} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-on-surface">Milestones</h3>
+                  <p className="text-xs text-on-surface-secondary">Manage achievements</p>
                 </div>
               </div>
             </Link>
@@ -243,8 +255,8 @@ export default async function AdminDashboard() {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2">
-                <Link 
-                  href="/admin/stats" 
+                <Link
+                  href="/admin/stats"
                   className="btn btn-primary w-full flex items-center justify-center gap-2"
                 >
                   <TrendingUp size={16} />

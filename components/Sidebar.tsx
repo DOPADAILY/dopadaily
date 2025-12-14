@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck, Award, Headphones, FileText, Crown, Settings } from 'lucide-react'
+import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck, Award, Headphones, FileText, Crown, Settings, MessageCircle } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { isSessionError, handleSessionError } from '@/utils/errorHandling'
+import { useUnreadMessageCount } from '@/hooks/queries'
 
 interface SidebarProps {
   onNavigate?: () => void
@@ -16,6 +17,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
   const [isPremium, setIsPremium] = useState(false)
+  const { data: unreadCount = 0 } = useUnreadMessageCount()
 
   useEffect(() => {
     const checkUserStatus = async () => {
@@ -73,6 +75,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
     { href: '/notes', label: 'Notes', icon: FileText },
     { href: '/sounds', label: 'Dopaflow Sound Library', icon: Headphones },
     { href: '/achievements', label: 'Achievements', icon: Award },
+    { href: '/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
     { href: '/forum', label: 'Community', icon: MessageSquare },
     { href: '/reminders', label: 'Reminders', icon: Bell },
   ]
@@ -101,6 +104,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
         {navItems.map((item, index) => {
           const Icon = item.icon
           const isHighlight = 'highlight' in item && item.highlight
+          const hasBadge = 'badge' in item && item.badge && item.badge > 0
           const active = isActive(item.href)
           return (
             <Link
@@ -122,6 +126,12 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
               />
               <Icon size={20} className={`transition-transform duration-200 ${!active ? 'group-hover:scale-110' : ''}`} />
               <span className="flex-1">{item.label}</span>
+              {/* Unread badge */}
+              {hasBadge && (
+                <span className="shrink-0 min-w-[20px] h-5 px-1.5 bg-error text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  {item.badge! > 9 ? '9+' : item.badge}
+                </span>
+              )}
               {/* Hover glow effect */}
               {!active && (
                 <span className="absolute inset-0 rounded-lg bg-primary/0 group-hover:bg-primary/5 transition-colors duration-200" />

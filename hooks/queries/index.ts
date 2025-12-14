@@ -128,3 +128,17 @@ export {
   subscriptionKeys,
 } from './useSubscription'
 export type { SubscriptionData } from './useSubscription'
+
+// Messages hooks
+export {
+  useConversations,
+  useConversationMessages,
+  useUnreadMessageCount,
+  useSendMessage,
+  useMarkMessagesAsRead,
+  useCreateConversation,
+  useToggleArchiveConversation,
+  useDeleteMessage,
+  messagesKeys,
+} from './useMessages'
+export type { Conversation, Message } from '@/app/messages/actions'

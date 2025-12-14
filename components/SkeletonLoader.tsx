@@ -480,6 +480,64 @@ export function AdminSkeleton() {
   )
 }
 
+// Messages skeleton
+export function MessagesSkeleton() {
+  return (
+    <div className="h-[calc(100vh-4rem)] flex">
+      {/* Conversations Sidebar */}
+      <div className="w-full md:w-80 lg:w-96 border-r border-border bg-surface overflow-y-auto">
+        <div className="divide-y divide-border">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="p-4 flex items-start gap-3">
+              <SkeletonPulse className="h-10 w-10 rounded-full shrink-0" />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center justify-between">
+                  <SkeletonPulse className="h-4 w-32" />
+                  <SkeletonPulse className="h-3 w-12" />
+                </div>
+                <SkeletonPulse className="h-3 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Chat Window */}
+      <div className="flex-1 hidden md:flex flex-col">
+        {/* Chat Header */}
+        <div className="border-b border-border bg-surface-elevated p-4 flex items-center gap-3">
+          <SkeletonPulse className="h-10 w-10 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <SkeletonPulse className="h-4 w-32" />
+            <SkeletonPulse className="h-3 w-16" />
+          </div>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-surface">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className={`flex gap-3 ${i % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
+              <SkeletonPulse className="h-8 w-8 rounded-full shrink-0" />
+              <div className={`flex flex-col max-w-[70%] ${i % 2 === 0 ? 'items-start' : 'items-end'}`}>
+                <SkeletonPulse className="h-16 w-64 rounded-2xl" />
+                <SkeletonPulse className="h-3 w-20 mt-1" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Message Input */}
+        <div className="border-t border-border bg-surface p-4">
+          <div className="flex items-end gap-3">
+            <SkeletonPulse className="flex-1 h-12 rounded-lg" />
+            <SkeletonPulse className="h-12 w-24 rounded-lg" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Generic card skeleton (for backwards compatibility)
 export default function SkeletonLoader({ type = 'card' }: { type?: 'card' | 'list' | 'table' | 'stat' }) {
   if (type === 'card') {
