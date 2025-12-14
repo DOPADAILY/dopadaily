@@ -142,3 +142,13 @@ export {
   messagesKeys,
 } from './useMessages'
 export type { Conversation, Message } from '@/app/messages/actions'
+
+// Voice Notes hooks
+export {
+  useVoiceNoteLimit,
+  useVoiceNotesUsage,
+  useUploadVoiceNote,
+  useDeleteVoiceNoteFile,
+  useSignedAudioUrl,
+  voiceNotesKeys,
+} from './useVoiceNotes'

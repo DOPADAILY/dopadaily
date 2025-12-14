@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   FileText, Trash2, Plus, X, Edit2, Pin, PinOff, Search,
-  Lightbulb, Target, Brain, Sparkles, BookOpen, Loader2, Crown
+  Lightbulb, Target, Brain, Sparkles, BookOpen, Loader2, Crown, Mic
 } from 'lucide-react'
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useTogglePin, useFeatureLimit } from '@/hooks/queries'
 import { Note, NoteCategory, NoteColor } from './actions'
@@ -14,6 +14,8 @@ import Select from '@/components/Select'
 import { NotesSkeleton } from '@/components/SkeletonLoader'
 import UpgradePrompt from '@/components/UpgradePrompt'
 import NoteFormModal from '@/components/NoteFormModal'
+import SignedAudioPlayer, { CompactSignedAudioPlayer } from '@/components/SignedAudioPlayer'
+import VoiceNoteLimitBanner from '@/components/VoiceNoteLimitBanner'
 
 const categoryOptions = [
   { value: 'all', label: 'All Notes' },
@@ -71,7 +73,7 @@ export default function NotesClient() {
       const matchesCategory = filterCategory === 'all' || note.category === filterCategory
       const matchesSearch = searchQuery === '' ||
         note.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+        note.content?.toLowerCase().includes(searchQuery.toLowerCase())
       return matchesCategory && matchesSearch
     })
     .sort((a, b) => {
@@ -87,17 +89,33 @@ export default function NotesClient() {
 
   const handleCreateNote = async (formData: FormData) => {
     const title = formData.get('title') as string | null
-    const content = formData.get('content') as string
+    const content = formData.get('content') as string | null
     const category = (formData.get('category') as NoteCategory) || 'general'
     const color = (formData.get('color') as NoteColor) || 'default'
 
-    if (!content?.trim()) {
-      setToast({ message: 'Note content is required', type: 'error' })
+    // Audio fields for voice notes
+    const audioUrl = formData.get('audio_url') as string | null
+    const audioDuration = formData.get('audio_duration') as string | null
+    const audioSize = formData.get('audio_size') as string | null
+    const audioFormat = formData.get('audio_format') as string | null
+
+    // Either content or audio must be provided
+    if (!content?.trim() && !audioUrl) {
+      setToast({ message: 'Note content or audio recording is required', type: 'error' })
       return
     }
 
     createNote.mutate(
-      { title, content, category, color },
+      {
+        title,
+        content,
+        category,
+        color,
+        audio_url: audioUrl,
+        audio_duration: audioDuration ? parseInt(audioDuration) : null,
+        audio_size: audioSize ? parseInt(audioSize) : null,
+        audio_format: audioFormat,
+      },
       {
         onSuccess: () => {
           setIsCreateOpen(false)
@@ -113,17 +131,34 @@ export default function NotesClient() {
   const handleUpdateNote = async (formData: FormData) => {
     const id = formData.get('id') as string
     const title = formData.get('title') as string | null
-    const content = formData.get('content') as string
+    const content = formData.get('content') as string | null
     const category = (formData.get('category') as NoteCategory) || 'general'
     const color = (formData.get('color') as NoteColor) || 'default'
 
-    if (!content?.trim()) {
-      setToast({ message: 'Note content is required', type: 'error' })
+    // Audio fields for voice notes
+    const audioUrl = formData.get('audio_url') as string | null
+    const audioDuration = formData.get('audio_duration') as string | null
+    const audioSize = formData.get('audio_size') as string | null
+    const audioFormat = formData.get('audio_format') as string | null
+
+    // Either content or audio must be provided
+    if (!content?.trim() && !audioUrl) {
+      setToast({ message: 'Note content or audio recording is required', type: 'error' })
       return
     }
 
     updateNote.mutate(
-      { id, title, content, category, color },
+      {
+        id,
+        title,
+        content,
+        category,
+        color,
+        audio_url: audioUrl,
+        audio_duration: audioDuration ? parseInt(audioDuration) : null,
+        audio_size: audioSize ? parseInt(audioSize) : null,
+        audio_format: audioFormat,
+      },
       {
         onSuccess: () => {
           setEditingNote(null)
@@ -234,10 +269,30 @@ export default function NotesClient() {
         </h3>
       )}
 
+      {/* Audio Player */}
+      {note.audio_url && (
+        <div className="mb-3" onClick={e => e.stopPropagation()}>
+          <CompactSignedAudioPlayer
+            audioPath={note.audio_url}
+            duration={note.audio_duration || undefined}
+          />
+        </div>
+      )}
+
       {/* Content preview */}
-      <p className="text-sm text-on-surface-secondary line-clamp-3 whitespace-pre-wrap">
-        {note.content}
-      </p>
+      {note.content && note.content.trim() && (
+        <p className="text-sm text-on-surface-secondary line-clamp-3 whitespace-pre-wrap">
+          {note.content}
+        </p>
+      )}
+
+      {/* Voice note indicator if no text content */}
+      {note.audio_url && !note.content && (
+        <div className="flex items-center gap-2 text-sm text-on-surface-secondary">
+          <Mic size={14} />
+          <span>Voice note only</span>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
@@ -278,6 +333,9 @@ export default function NotesClient() {
 
   return (
     <>
+      {/* Voice Notes Usage Banner */}
+      <VoiceNoteLimitBanner />
+
       {/* Upgrade Banner for Free Users at Limit */}
       {isAtLimit && !isPremium && (
         <UpgradePrompt
@@ -444,9 +502,29 @@ export default function NotesClient() {
                   {viewingNote.title}
                 </h2>
               )}
-              <p className="text-on-surface whitespace-pre-wrap leading-relaxed">
-                {viewingNote.content}
-              </p>
+
+              {/* Voice Note Player */}
+              {viewingNote.audio_url && (
+                <div className="mb-4">
+                  <SignedAudioPlayer
+                    audioPath={viewingNote.audio_url}
+                    duration={viewingNote.audio_duration || undefined}
+                    showDelete={false}
+                  />
+                </div>
+              )}
+
+              {/* Text Content */}
+              {viewingNote.content && viewingNote.content.trim() ? (
+                <p className="text-on-surface whitespace-pre-wrap leading-relaxed">
+                  {viewingNote.content}
+                </p>
+              ) : viewingNote.audio_url ? (
+                <p className="text-on-surface-secondary italic flex items-center gap-2">
+                  <Mic size={16} />
+                  Voice note only
+                </p>
+              ) : null}
 
               {/* Meta */}
               <div className="mt-6 pt-4 border-t border-border/50 text-xs text-on-surface-secondary">
