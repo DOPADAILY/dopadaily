@@ -281,9 +281,9 @@ export default function NotesClient() {
 
       {/* Content preview */}
       {note.content && note.content.trim() && (
-        <p className="text-sm text-on-surface-secondary line-clamp-3 whitespace-pre-wrap">
-          {note.content}
-        </p>
+      <p className="text-sm text-on-surface-secondary line-clamp-3 whitespace-pre-wrap">
+        {note.content}
+      </p>
       )}
 
       {/* Voice note indicator if no text content */}
@@ -516,9 +516,9 @@ export default function NotesClient() {
 
               {/* Text Content */}
               {viewingNote.content && viewingNote.content.trim() ? (
-                <p className="text-on-surface whitespace-pre-wrap leading-relaxed">
-                  {viewingNote.content}
-                </p>
+              <p className="text-on-surface whitespace-pre-wrap leading-relaxed">
+                {viewingNote.content}
+              </p>
               ) : viewingNote.audio_url ? (
                 <p className="text-on-surface-secondary italic flex items-center gap-2">
                   <Mic size={16} />

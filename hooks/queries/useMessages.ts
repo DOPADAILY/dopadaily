@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect } from 'react'
 import type { Conversation, Message } from '@/app/messages/actions'
+import { sendMessage as sendMessageAction } from '@/app/messages/actions'
 
 // Query keys
 export const messagesKeys = {
@@ -207,42 +208,15 @@ export function useUnreadMessageCount() {
 
 /**
  * Mutation to send a message with optimistic updates
+ * Uses server action to ensure email notifications are sent
  */
 export function useSendMessage() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ conversationId, content }: { conversationId: string; content: string }) => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      // Get conversation details
-      const { data: conversation } = await supabase
-        .from('conversations')
-        .select('admin_id, user_id')
-        .eq('id', conversationId)
-        .single()
-
-      if (!conversation) throw new Error('Conversation not found')
-
-      const recipientId = conversation.admin_id === user.id
-        ? conversation.user_id
-        : conversation.admin_id
-
-      const { data: message, error } = await supabase
-        .from('admin_messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          recipient_id: recipientId,
-          content: content.trim()
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
+      // Call the server action which handles email notifications
+      const message = await sendMessageAction(conversationId, content)
       return message
     },
     onMutate: async ({ conversationId, content }) => {

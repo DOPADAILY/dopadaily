@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sendNewMessageEmail } from '@/lib/resend'
 
 export type Conversation = {
   id: string
@@ -189,6 +190,46 @@ export async function sendMessage(conversationId: string, content: string) {
     .single()
 
   if (error) throw error
+
+  // Send email notification to recipient (non-blocking)
+  try {
+    // Get sender and recipient profiles for email
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, email, email_notifications')
+      .in('id', [user.id, recipientId])
+
+    const senderProfile = profiles?.find(p => p.id === user.id)
+    const recipientProfile = profiles?.find(p => p.id === recipientId)
+
+    if (recipientProfile?.email && recipientProfile?.email_notifications !== false) {
+      // Determine the correct messages URL based on recipient role
+      const { data: recipientRoleData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', recipientId)
+        .single()
+
+      const isRecipientAdmin = recipientRoleData?.role === 'admin' || recipientRoleData?.role === 'super_admin'
+      const messagesUrl = isRecipientAdmin
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/admin/messages?conversation=${conversationId}`
+        : `${process.env.NEXT_PUBLIC_SITE_URL}/messages`
+
+      // Send email notification (don't await - fire and forget)
+      sendNewMessageEmail({
+        recipientEmail: recipientProfile.email,
+        recipientName: recipientProfile.username || 'User',
+        senderName: senderProfile?.username || 'Someone',
+        messagePreview: content.trim(),
+        conversationUrl: messagesUrl
+      }).catch(err => {
+        console.error('Failed to send message notification email:', err)
+      })
+    }
+  } catch (emailError) {
+    // Don't fail the message send if email fails
+    console.error('Error preparing message notification email:', emailError)
+  }
 
   revalidatePath('/messages')
   revalidatePath('/admin/messages')

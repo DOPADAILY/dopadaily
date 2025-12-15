@@ -15,15 +15,15 @@ export const noteKeys = {
 async function fetchNotes(): Promise<Note[]> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
+  
   if (!user) throw new Error('Not authenticated')
-
+  
   const { data, error } = await supabase
     .from('notes')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-
+  
   if (error) throw error
   return data || []
 }
@@ -45,14 +45,14 @@ interface CreateNoteInput {
 async function createNoteApi(input: CreateNoteInput): Promise<Note> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
+  
   if (!user) throw new Error('Not authenticated')
 
   // Either content or audio must be provided
   if (!input.content?.trim() && !input.audio_url) {
     throw new Error('Note content or audio recording is required')
   }
-
+  
   const { data, error } = await supabase
     .from('notes')
     .insert({
@@ -69,7 +69,7 @@ async function createNoteApi(input: CreateNoteInput): Promise<Note> {
     })
     .select()
     .single()
-
+  
   if (error) throw error
   return data
 }
@@ -91,9 +91,9 @@ interface UpdateNoteInput {
 async function updateNoteApi(input: UpdateNoteInput): Promise<Note> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
+  
   if (!user) throw new Error('Not authenticated')
-
+  
   const updates: Partial<Note> = {}
   if (input.title !== undefined) updates.title = input.title?.trim() || null
   if (input.content !== undefined) updates.content = input.content?.trim() || null
@@ -103,7 +103,7 @@ async function updateNoteApi(input: UpdateNoteInput): Promise<Note> {
   if (input.audio_duration !== undefined) updates.audio_duration = input.audio_duration
   if (input.audio_size !== undefined) updates.audio_size = input.audio_size
   if (input.audio_format !== undefined) updates.audio_format = input.audio_format
-
+  
   const { data, error } = await supabase
     .from('notes')
     .update(updates)
@@ -111,7 +111,7 @@ async function updateNoteApi(input: UpdateNoteInput): Promise<Note> {
     .eq('user_id', user.id)
     .select()
     .single()
-
+  
   if (error) throw error
   return data
 }
@@ -120,15 +120,15 @@ async function updateNoteApi(input: UpdateNoteInput): Promise<Note> {
 async function deleteNoteApi(id: string): Promise<void> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
+  
   if (!user) throw new Error('Not authenticated')
-
+  
   const { error } = await supabase
     .from('notes')
     .delete()
     .eq('id', id)
     .eq('user_id', user.id)
-
+  
   if (error) throw error
 }
 
@@ -136,9 +136,9 @@ async function deleteNoteApi(id: string): Promise<void> {
 async function togglePinApi(id: string, currentlyPinned: boolean): Promise<Note> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
+  
   if (!user) throw new Error('Not authenticated')
-
+  
   const { data, error } = await supabase
     .from('notes')
     .update({ is_pinned: !currentlyPinned })
@@ -146,7 +146,7 @@ async function togglePinApi(id: string, currentlyPinned: boolean): Promise<Note>
     .eq('user_id', user.id)
     .select()
     .single()
-
+  
   if (error) throw error
   return data
 }
@@ -162,16 +162,16 @@ export function useNotes() {
 // Mutation hooks with optimistic updates
 export function useCreateNote() {
   const queryClient = useQueryClient()
-
+  
   return useMutation({
     mutationFn: createNoteApi,
     onMutate: async (newNote) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: noteKeys.lists() })
-
+      
       // Snapshot previous value
       const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.lists())
-
+      
       // Optimistically add the new note
       const optimisticNote: Note = {
         id: `temp-${Date.now()}`,
@@ -189,11 +189,11 @@ export function useCreateNote() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
-
-      queryClient.setQueryData<Note[]>(noteKeys.lists(), (old) =>
+      
+      queryClient.setQueryData<Note[]>(noteKeys.lists(), (old) => 
         [optimisticNote, ...(old || [])]
       )
-
+      
       return { previousNotes }
     },
     onError: (_err, _newNote, context) => {
@@ -211,29 +211,29 @@ export function useCreateNote() {
 
 export function useUpdateNote() {
   const queryClient = useQueryClient()
-
+  
   return useMutation({
     mutationFn: updateNoteApi,
     onMutate: async (updatedNote) => {
       await queryClient.cancelQueries({ queryKey: noteKeys.lists() })
-
+      
       const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.lists())
-
+      
       // Optimistically update the note
       queryClient.setQueryData<Note[]>(noteKeys.lists(), (old) =>
         old?.map((note) =>
           note.id === updatedNote.id
             ? {
-              ...note,
-              ...updatedNote,
-              title: updatedNote.title?.trim() || null,
-              content: updatedNote.content?.trim() || note.content,
-              updated_at: new Date().toISOString(),
-            }
+                ...note,
+                ...updatedNote,
+                title: updatedNote.title?.trim() || null,
+                content: updatedNote.content?.trim() || note.content,
+                updated_at: new Date().toISOString(),
+              }
             : note
         ) || []
       )
-
+      
       return { previousNotes }
     },
     onError: (_err, _updatedNote, context) => {
@@ -249,19 +249,19 @@ export function useUpdateNote() {
 
 export function useDeleteNote() {
   const queryClient = useQueryClient()
-
+  
   return useMutation({
     mutationFn: deleteNoteApi,
     onMutate: async (deletedId) => {
       await queryClient.cancelQueries({ queryKey: noteKeys.lists() })
-
+      
       const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.lists())
-
+      
       // Optimistically remove the note
       queryClient.setQueryData<Note[]>(noteKeys.lists(), (old) =>
         old?.filter((note) => note.id !== deletedId) || []
       )
-
+      
       return { previousNotes }
     },
     onError: (_err, _deletedId, context) => {
@@ -277,15 +277,15 @@ export function useDeleteNote() {
 
 export function useTogglePin() {
   const queryClient = useQueryClient()
-
+  
   return useMutation({
-    mutationFn: ({ id, isPinned }: { id: string; isPinned: boolean }) =>
+    mutationFn: ({ id, isPinned }: { id: string; isPinned: boolean }) => 
       togglePinApi(id, isPinned),
     onMutate: async ({ id, isPinned }) => {
       await queryClient.cancelQueries({ queryKey: noteKeys.lists() })
-
+      
       const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.lists())
-
+      
       // Optimistically toggle the pin
       queryClient.setQueryData<Note[]>(noteKeys.lists(), (old) =>
         old?.map((note) =>
@@ -294,7 +294,7 @@ export function useTogglePin() {
             : note
         ) || []
       )
-
+      
       return { previousNotes }
     },
     onError: (_err, _variables, context) => {
