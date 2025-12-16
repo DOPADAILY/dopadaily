@@ -152,3 +152,17 @@ export {
   useSignedAudioUrl,
   voiceNotesKeys,
 } from './useVoiceNotes'
+
+// Tasks hooks (Kanban)
+export {
+  useTasks,
+  useTasksByStatus,
+  useTaskUsage,
+  useTaskLimit,
+  useCreateTask,
+  useUpdateTask,
+  useDeleteTask,
+  useClearCompletedTasks,
+  taskKeys,
+} from './useTasks'
+export type { Task, TaskStatus, TaskPriority, TaskColor } from './useTasks'

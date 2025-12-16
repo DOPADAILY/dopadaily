@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck, Award, Headphones, FileText, Crown, Settings, MessageCircle } from 'lucide-react'
+import { Brain, MessageSquare, Bell, LogOut, LayoutDashboard, ShieldCheck, Award, Headphones, FileText, Crown, Settings, MessageCircle, LayoutGrid } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { isSessionError, handleSessionError } from '@/utils/errorHandling'
@@ -72,6 +72,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
   const baseNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/focus', label: 'Focus Timer', icon: Brain },
+    { href: '/tasks', label: 'Tasks', icon: LayoutGrid },
     { href: '/notes', label: 'Notes', icon: FileText },
     { href: '/sounds', label: 'Dopaflow Sound Library', icon: Headphones },
     { href: '/achievements', label: 'Achievements', icon: Award },
