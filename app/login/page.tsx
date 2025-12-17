@@ -11,9 +11,10 @@ import PasswordInput from '@/components/PasswordInput'
 function LoginContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const error = searchParams?.get('error') || searchParams?.get('message')
+  const urlMessage = searchParams?.get('error') || searchParams?.get('message')
   const [isPending, startTransition] = useTransition()
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(urlMessage)
 
   // Check if user is already logged in
   // Only redirect if we can VERIFY the session (not just read from cookies)
@@ -36,14 +37,26 @@ function LoginContent() {
     checkSession()
   }, [router])
 
+  // Keep URL-provided messages (e.g. redirects) in sync with local error display.
+  useEffect(() => {
+    setErrorMessage(urlMessage)
+  }, [urlMessage])
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
+    setErrorMessage(null)
 
     const formData = new FormData(e.currentTarget)
     startTransition(async () => {
-      await login(formData)
-      setIsLoading(false)
+      try {
+        const result = await login(formData)
+        if (result?.error) {
+          setErrorMessage(result.error)
+        }
+      } finally {
+        setIsLoading(false)
+      }
     })
   }
 
@@ -84,9 +97,9 @@ function LoginContent() {
 
               {/* Form Section */}
               <div className="flex w-full flex-col gap-[12px]">
-                {error && (
+                {errorMessage && (
                   <div className="rounded-[8px] border border-error bg-error-bg p-3">
-                    <p className="text-[14px] text-error">{error}</p>
+                    <p className="text-[14px] text-error">{errorMessage}</p>
                   </div>
                 )}
 
@@ -261,9 +274,9 @@ function LoginContent() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="flex flex-col gap-[24px]">
-              {error && (
+              {errorMessage && (
                 <div className="rounded-[8px] border border-error bg-error-bg p-3">
-                  <p className="text-[14px] text-error">{error}</p>
+                  <p className="text-[14px] text-error">{errorMessage}</p>
                 </div>
               )}
 

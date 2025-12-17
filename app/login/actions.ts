@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
 
-export async function login(formData: FormData) {
+export async function login(formData: FormData): Promise<{ error?: string }> {
     const supabase = await createClient()
 
     const email = formData.get('email') as string
@@ -17,14 +17,16 @@ export async function login(formData: FormData) {
     })
 
     if (error) {
-        redirect('/login?error=Invalid email or password')
+        // IMPORTANT: don't redirect on auth failure; returning an error preserves the form inputs.
+        return { error: 'Invalid email or password' }
     }
 
     revalidatePath('/', 'layout')
     redirect('/dashboard')
 }
 
-export async function signup(formData: FormData) {
+// Note: signup is implemented in app/signup/actions.ts; kept here for backward compatibility.
+export async function signup(formData: FormData): Promise<{ error?: string }> {
     const supabase = await createClient()
 
     const email = formData.get('email') as string
@@ -36,7 +38,7 @@ export async function signup(formData: FormData) {
     })
 
     if (error) {
-        redirect('/signup?error=' + encodeURIComponent(error.message))
+        return { error: error.message }
     }
 
     revalidatePath('/', 'layout')

@@ -40,28 +40,28 @@ export async function signup(formData: FormData) {
 
   // Validate username
   if (!username || username.length < 3) {
-    redirect('/signup?error=' + encodeURIComponent('Username must be at least 3 characters'))
+    return { error: 'Username must be at least 3 characters' }
   }
 
   // Check if username is alphanumeric with underscores/hyphens only
   const usernameRegex = /^[a-zA-Z0-9_-]+$/
   if (!usernameRegex.test(username)) {
-    redirect('/signup?error=' + encodeURIComponent('Username can only contain letters, numbers, hyphens, and underscores'))
+    return { error: 'Username can only contain letters, numbers, hyphens, and underscores' }
   }
 
   // Check if username is available
   const { available: usernameAvailable } = await checkUsernameAvailability(username)
   if (!usernameAvailable) {
-    redirect('/signup?error=' + encodeURIComponent('This username is already taken. Please choose another.'))
+    return { error: 'This username is already taken. Please choose another.' }
   }
 
   // Basic email validation
   if (!email || !email.includes('@')) {
-    redirect('/signup?error=' + encodeURIComponent('Please enter a valid email address'))
+    return { error: 'Please enter a valid email address' }
   }
 
   if (!password || password.length < 6) {
-    redirect('/signup?error=' + encodeURIComponent('Password must be at least 6 characters'))
+    return { error: 'Password must be at least 6 characters' }
   }
 
   const { data, error } = await supabase.auth.signUp({
@@ -77,9 +77,9 @@ export async function signup(formData: FormData) {
   if (error) {
     // Check if it's a duplicate email error
     if (error.message.includes('already registered') || error.message.includes('already exists')) {
-      redirect('/signup?error=' + encodeURIComponent('This email is already registered. Please login instead.'))
+      return { error: 'This email is already registered. Please login instead.' }
     }
-    redirect('/signup?error=' + encodeURIComponent(error.message))
+    return { error: error.message }
   }
 
   // Send welcome email (non-blocking)

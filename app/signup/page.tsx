@@ -11,13 +11,14 @@ import PasswordInput from '@/components/PasswordInput'
 function SignupContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const error = searchParams?.get('error')
+    const urlError = searchParams?.get('error')
     const [isPending, startTransition] = useTransition()
     const [isLoading, setIsLoading] = useState(false)
     const [username, setUsername] = useState('')
     const [usernameError, setUsernameError] = useState('')
     const [email, setEmail] = useState('')
     const [emailError, setEmailError] = useState('')
+    const [formError, setFormError] = useState<string | null>(urlError)
 
     // Check if user is already logged in
     useEffect(() => {
@@ -30,6 +31,11 @@ function SignupContent() {
         }
         checkSession()
     }, [router])
+
+    // Keep URL error (e.g. redirects) in sync with the local error display.
+    useEffect(() => {
+        setFormError(urlError)
+    }, [urlError])
 
     // Username validation
     useEffect(() => {
@@ -72,6 +78,7 @@ function SignupContent() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
+        setFormError(null)
 
         // Validate username and email before submitting
         if (!username || usernameError) {
@@ -88,8 +95,22 @@ function SignupContent() {
 
         const formData = new FormData(e.currentTarget)
         startTransition(async () => {
-            await signup(formData)
-            setIsLoading(false)
+            try {
+                const result = await signup(formData)
+                if (result?.error) {
+                    const msg = result.error
+                    const lower = msg.toLowerCase()
+                    if (lower.includes('username')) {
+                        setUsernameError(msg)
+                    } else if (lower.includes('email')) {
+                        setEmailError(msg)
+                    } else {
+                        setFormError(msg)
+                    }
+                }
+            } finally {
+                setIsLoading(false)
+            }
         })
     }
 
@@ -130,9 +151,9 @@ function SignupContent() {
 
                             {/* Form Section */}
                             <div className="flex w-full flex-col gap-[12px]">
-                                {error && (
+                                {formError && (
                                     <div className="rounded-[8px] border border-error bg-error-bg p-3">
-                                        <p className="text-[14px] text-error">{error}</p>
+                                        <p className="text-[14px] text-error">{formError}</p>
                                     </div>
                                 )}
 
@@ -336,9 +357,9 @@ function SignupContent() {
 
                         {/* Form */}
                         <form onSubmit={handleSubmit} className="flex flex-col gap-[24px]">
-                            {error && (
+                            {formError && (
                                 <div className="rounded-[8px] border border-error bg-error-bg p-3">
-                                    <p className="text-[14px] text-error">{error}</p>
+                                    <p className="text-[14px] text-error">{formError}</p>
                                 </div>
                             )}
 
