@@ -233,15 +233,15 @@ export default function TaskListView({
             key={status}
             onClick={() => setActiveTab(status)}
             className={`
-              flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium transition-all
+              flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-3 rounded-lg text-sm font-medium transition-all
               ${activeTab === status
                 ? `bg-surface shadow-sm ${statusConfig[status].textClass}`
                 : 'text-on-surface-secondary hover:text-on-surface'
               }
             `}
           >
-            {statusConfig[status].icon}
-            <span className="hidden xs:inline">{statusConfig[status].label}</span>
+            <span className="hidden sm:inline">{statusConfig[status].icon}</span>
+            <span className="text-xs sm:text-sm">{statusConfig[status].label}</span>
             <span className={`
               text-xs px-1.5 py-0.5 rounded-full font-medium
               ${activeTab === status ? statusConfig[status].bgClass : 'bg-on-surface-secondary/10'}

@@ -158,7 +158,7 @@ export default function TaskModal({
                   type="button"
                   onClick={() => setStatus(opt.value as TaskStatus)}
                   className={`
-                    flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all
+                    flex-1 flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2.5 rounded-lg border text-sm font-medium transition-all
                     ${isSelected
                       ? opt.value === 'todo'
                         ? 'bg-on-surface-secondary/10 border-on-surface-secondary/30 text-on-surface'
@@ -169,8 +169,8 @@ export default function TaskModal({
                     }
                   `}
                 >
-                  <Icon size={16} className={opt.value === 'in_progress' && isSelected ? 'animate-spin' : ''} />
-                  <span className="hidden sm:inline">{opt.label}</span>
+                  <Icon size={16} className={`hidden sm:inline ${opt.value === 'in_progress' && isSelected ? 'animate-spin' : ''}`} />
+                  <span className="text-xs sm:text-sm">{opt.label}</span>
                 </button>
               )
             })}
