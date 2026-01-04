@@ -407,3 +407,56 @@ export async function deleteMessage(messageId: number) {
 
   return { success: true }
 }
+
+export type SearchUser = {
+  id: string
+  username: string | null
+  email: string | null
+  avatar_url: string | null
+  role: string
+}
+
+/**
+ * Search users by username or email (admin/superadmin only)
+ */
+export async function searchUsers(query: string): Promise<SearchUser[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Not authenticated')
+  }
+
+  // Verify user is admin or super_admin
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin' && profile?.role !== 'super_admin') {
+    throw new Error('Unauthorized: Admin access required')
+  }
+
+  const searchTerm = query?.trim().toLowerCase() || ''
+
+  // Build query
+  let dbQuery = supabase
+    .from('profiles')
+    .select('id, username, email, avatar_url, role')
+    .neq('id', user.id) // Exclude current user
+    .eq('is_banned', false) // Exclude banned users
+    .order('username', { ascending: true })
+    .limit(50)
+
+  // If there's a search term, filter by it
+  if (searchTerm.length > 0) {
+    dbQuery = dbQuery.or(`username.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+  }
+
+  const { data: users, error } = await dbQuery
+
+  if (error) throw error
+
+  return users as SearchUser[]
+}

@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect } from 'react'
-import type { Conversation, Message } from '@/app/messages/actions'
-import { sendMessage as sendMessageAction } from '@/app/messages/actions'
+import type { Conversation, Message, SearchUser } from '@/app/messages/actions'
+import { sendMessage as sendMessageAction, searchUsers as searchUsersAction } from '@/app/messages/actions'
 
 // Query keys
 export const messagesKeys = {
@@ -10,6 +10,7 @@ export const messagesKeys = {
   conversations: () => [...messagesKeys.all, 'conversations'] as const,
   conversation: (id: string) => [...messagesKeys.all, 'conversation', id] as const,
   unreadCount: () => [...messagesKeys.all, 'unread-count'] as const,
+  userSearch: (query: string) => [...messagesKeys.all, 'user-search', query] as const,
 }
 
 /**
@@ -418,3 +419,20 @@ export function useDeleteMessage() {
     },
   })
 }
+
+/**
+ * Hook to search users by username or email (admin only)
+ * When query is empty and enabled, fetches all users
+ */
+export function useSearchUsers(query: string, enabled: boolean = false) {
+  return useQuery({
+    queryKey: messagesKeys.userSearch(query || 'all'),
+    queryFn: async () => {
+      return await searchUsersAction(query)
+    },
+    enabled: enabled || query.trim().length >= 2, // Fetch when enabled or when searching
+    staleTime: 1000 * 30, // 30 seconds
+  })
+}
+
+export type { SearchUser }

@@ -20,6 +20,11 @@ export default async function MessagesPage() {
     .eq('id', user.id)
     .single()
 
+  // Redirect admins to admin messages page
+  if (profile?.role === 'admin' || profile?.role === 'super_admin') {
+    redirect('/admin/messages')
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
