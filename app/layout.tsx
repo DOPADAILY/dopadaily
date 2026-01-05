@@ -7,7 +7,6 @@ import { MobileSidebarProvider } from "@/components/MobileSidebar";
 import MiniPlayer from "@/components/MiniPlayer";
 import MusicPlayerModal from "@/components/MusicPlayerModal";
 import { QueryProvider } from "@/providers/QueryProvider";
-import PWARegister from "@/components/PWARegister";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -172,7 +171,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${montserrat.variable} ${dmSans.variable}`}>
       <body className="antialiased bg-surface text-on-surface">
-        <PWARegister />
         <QueryProvider>
           <MobileSidebarProvider>
             <ConditionalSidebar />
