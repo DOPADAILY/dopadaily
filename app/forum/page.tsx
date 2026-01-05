@@ -46,7 +46,7 @@ export default async function ForumPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="h-16 border-b border-border bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
+      <header className="h-16 lg:border-b border-border lg:bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
         <div className="h-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
           <MobileMenuButton />
           <div className="flex-1 min-w-0">
@@ -64,7 +64,7 @@ export default async function ForumPage() {
       </header>
 
       <div className="mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
-        <ForumClient 
+        <ForumClient
           totalMembers={totalMembers || 0}
           totalDiscussions={totalDiscussions || 0}
           activeToday={activeToday}

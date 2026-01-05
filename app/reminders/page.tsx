@@ -24,7 +24,7 @@ export default async function RemindersPage() {
     <div className="min-h-screen">
 
       {/* Header */}
-      <header className="h-16 border-b border-border bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
+      <header className="h-16 lg:border-b border-border lg:bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
         <div className="h-full  mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
           <MobileMenuButton />
           <div className="flex-1">
@@ -40,7 +40,7 @@ export default async function RemindersPage() {
 
           {/* Reminders List */}
           <div className="xl:col-span-2 space-y-6">
-            <RemindersClient 
+            <RemindersClient
               userId={user.id}
               isAdmin={profile?.role === 'admin' || profile?.role === 'super_admin'}
             />

@@ -146,7 +146,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
     return (
       <div className="min-h-screen">
         {/* Header */}
-        <header className="h-16 border-b border-border bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
+        <header className="h-16 lg:border-b border-border lg:bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
           <div className="h-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
             <MobileMenuButton />
             <div className="min-w-0 flex-1">
@@ -177,7 +177,7 @@ export default function SoundsClient({ user, profile }: SoundsClientProps) {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="h-16 border-b border-border bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
+      <header className="h-16 lg:border-b border-border lg:bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
         <div className="h-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
           <MobileMenuButton />
           <div className="min-w-0 flex-1">
