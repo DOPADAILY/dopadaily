@@ -22,7 +22,7 @@ export default async function FocusPage() {
   return (
     <div className="min-h-screen">
       {/* Header - Minimal on Mobile */}
-      <header className="h-14 sm:h-16 border-b border-border bg-surface-elevated/80 backdrop-blur-sm sticky top-0 z-20">
+      <header className="h-14 sm:h-16 lg:border-b border-border lg:bg-surface-elevated/80 lg:backdrop-blur-sm sticky top-0 z-20">
         <div className="h-full mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-2 sm:gap-4">
           <MobileMenuButton />
           <div className="flex-1 min-w-0">
