@@ -72,20 +72,20 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
                     </div>
 
                     {recentSessions.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {recentSessions.map((session, index) => {
                                 const completedTime = new Date(session.completed_at)
                                 const durationMinutes = session.duration_minutes
 
                                 return (
-                                    <div key={`mobile-${index}`} className="p-4 bg-backplate rounded-lg border border-border">
+                                    <div key={`mobile-${index}`} className="p-5 bg-backplate rounded-2xl border border-border">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="font-medium text-on-surface">Focus Session</span>
-                                            <span className="text-xs text-on-surface-secondary">
+                                            <span className="font-semibold text-on-surface">Focus Session</span>
+                                            <span className="text-sm text-on-surface-secondary">
                                                 {completedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
-                                        <div className="text-sm text-on-surface-secondary">{durationMinutes} minutes completed ✓</div>
+                                        <div className="text-base text-on-surface-secondary">{durationMinutes} minutes completed ✓</div>
                                     </div>
                                 )
                             })}
@@ -104,7 +104,7 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 lg:gap-6 mb-8">
                 <div className="animate-stagger-2">
                 <StatCard
                     label="Focus Sessions Today"
@@ -139,40 +139,40 @@ export default function DashboardClient({ userId, userEmail }: DashboardClientPr
 
             {/* Quick Actions */}
             <div className="mb-8 animate-stagger-6">
-                <h2 className="text-xl font-semibold text-on-surface mb-4">Quick Actions</h2>
+                <h2 className="text-xl font-semibold text-on-surface mb-6">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-                    <Link href="/focus" className="group card card-interactive hover:border-primary">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Brain size={24} className="text-primary" />
+                    <Link href="/focus" className="group card card-interactive hover:border-primary active:scale-98 transition-all min-h-[80px] lg:min-h-0">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 lg:w-12 lg:h-12 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                                <Brain size={28} className="text-primary lg:w-6 lg:h-6" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-on-surface">Start Focus Timer</h3>
-                                <p className="text-xs text-on-surface-secondary">25-minute session</p>
+                                <h3 className="font-semibold text-on-surface text-base lg:text-sm">Start Focus Timer</h3>
+                                <p className="text-sm lg:text-xs text-on-surface-secondary mt-1">25-minute session</p>
                             </div>
                         </div>
                     </Link>
 
-                    <Link href="/forum" className="group card card-interactive hover:border-secondary">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <MessageSquare size={24} className="text-secondary" />
+                    <Link href="/forum" className="group card card-interactive hover:border-secondary active:scale-98 transition-all min-h-[80px] lg:min-h-0">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 lg:w-12 lg:h-12 rounded-2xl bg-secondary/10 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                                <MessageSquare size={28} className="text-secondary lg:w-6 lg:h-6" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-on-surface">Browse Community</h3>
-                                <p className="text-xs text-on-surface-secondary">{totalPostsCount || 0} discussions</p>
+                                <h3 className="font-semibold text-on-surface text-base lg:text-sm">Browse Community</h3>
+                                <p className="text-sm lg:text-xs text-on-surface-secondary mt-1">{totalPostsCount || 0} discussions</p>
                             </div>
                         </div>
                     </Link>
 
-                    <Link href="/reminders" className="group card card-interactive hover:border-accent">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Bell size={24} className="text-accent" />
+                    <Link href="/reminders" className="group card card-interactive hover:border-accent active:scale-98 transition-all min-h-[80px] lg:min-h-0">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 lg:w-12 lg:h-12 rounded-2xl bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                                <Bell size={28} className="text-accent lg:w-6 lg:h-6" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-on-surface">Set Reminder</h3>
-                                <p className="text-xs text-on-surface-secondary">Stay on track</p>
+                                <h3 className="font-semibold text-on-surface text-base lg:text-sm">Set Reminder</h3>
+                                <p className="text-sm lg:text-xs text-on-surface-secondary mt-1">Stay on track</p>
                             </div>
                         </div>
                     </Link>

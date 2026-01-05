@@ -76,10 +76,11 @@ export function MobileSidebarProvider({ children }: { children: React.ReactNode 
 export function MobileMenuButton() {
   const { setIsOpen } = useMobileSidebar()
 
+  // Hidden on mobile since we have bottom nav - only shows on tablet (md to lg)
   return (
     <button
       onClick={() => setIsOpen(true)}
-      className="lg:hidden w-10 h-10 rounded-lg hover:bg-backplate flex items-center justify-center text-on-surface cursor-pointer transition-colors"
+      className="hidden md:flex lg:hidden w-10 h-10 rounded-lg hover:bg-backplate items-center justify-center text-on-surface cursor-pointer transition-colors"
       aria-label="Open menu"
     >
       <Menu size={20} />

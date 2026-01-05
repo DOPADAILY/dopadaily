@@ -3,7 +3,9 @@
   "short_name": "Dopadaily",
   "description": "A therapeutic productivity app for focus and mental wellness",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#e9ddcf",
   "theme_color": "#b89c86",
   "icons": [

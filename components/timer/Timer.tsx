@@ -84,151 +84,140 @@ export default function Timer() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Calculate SVG circle progress
-  const radius = 140
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (timeLeft / duration) * circumference
+  // Calculate SVG circle progress (for responsive percentage-based circles)
+  const progressPercentage = (timeLeft / duration) * 100
 
   return (
-    <div className="flex flex-col items-center justify-center gap-10">
+    <div className="flex flex-col items-center justify-center w-full">
 
-      {/* Mode Toggles */}
-      <div className="flex w-full max-w-md gap-2 p-1.5 bg-backplate rounded-xl border border-border">
+      {/* Mode Toggles - Cleaner Design */}
+      <div className="flex w-full max-w-sm gap-3 mb-8 lg:mb-10">
         <button
           onClick={() => setMode('focus')}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-lg transition-all font-medium cursor-pointer ${mode === 'focus'
-            ? 'bg-primary text-on-primary shadow-md'
-            : 'text-on-surface-secondary hover:text-on-surface hover:bg-surface'
+          className={`flex-1 flex flex-col items-center justify-center gap-2 px-6 py-5 lg:py-4 rounded-2xl lg:rounded-xl transition-all font-semibold cursor-pointer active:scale-95 ${mode === 'focus'
+            ? 'bg-primary text-on-primary shadow-lg scale-105'
+            : 'bg-surface border-2 border-border text-on-surface-secondary hover:border-primary'
             }`}
         >
-          <Brain size={18} className="sm:w-5 sm:h-5" />
-          <span className="text-sm sm:text-base">Focus</span>
+          <Brain size={24} className="lg:w-5 lg:h-5" />
+          <span className="text-sm lg:text-xs font-bold">FOCUS</span>
         </button>
         <button
           onClick={() => setMode('break')}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-lg transition-all font-medium cursor-pointer ${mode === 'break'
-            ? 'bg-secondary text-on-primary shadow-md'
-            : 'text-on-surface-secondary hover:text-on-surface hover:bg-surface'
+          className={`flex-1 flex flex-col items-center justify-center gap-2 px-6 py-5 lg:py-4 rounded-2xl lg:rounded-xl transition-all font-semibold cursor-pointer active:scale-95 ${mode === 'break'
+            ? 'bg-secondary text-on-primary shadow-lg scale-105'
+            : 'bg-surface border-2 border-border text-on-surface-secondary hover:border-secondary'
             }`}
         >
-          <Coffee size={18} className="sm:w-5 sm:h-5" />
-          <span className="text-sm sm:text-base">Break</span>
+          <Coffee size={24} className="lg:w-5 lg:h-5" />
+          <span className="text-sm lg:text-xs font-bold">BREAK</span>
         </button>
       </div>
 
-      {/* Timer Display */}
-      <div className="relative w-[340px] h-[340px] flex items-center justify-center">
-        {/* Breathing glow effect when active */}
-        {isActive && (
-          <div 
-            className="absolute inset-[-20px] rounded-full animate-timer-glow"
-            style={{
-              background: mode === 'focus' 
-                ? 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)'
-                : 'radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)',
-              opacity: 0.15,
-              filter: 'blur(20px)',
-            }}
-          />
-        )}
+      {/* Timer Card - Modern Mobile Design */}
+      <div className="relative w-full max-w-sm mb-8 lg:mb-10">
+        <div className="relative bg-surface border-2 border-border rounded-3xl p-8 lg:p-10 shadow-lg">
+          {/* Progress Ring - Optimized Size */}
+          <div className="relative w-full aspect-square max-w-[280px] mx-auto mb-6">
+            {/* Background Circle */}
+            <svg 
+              className="absolute inset-0 w-full h-full transform -rotate-90"
+              viewBox="0 0 200 200"
+            >
+              <circle
+                cx="100"
+                cy="100"
+                r="90"
+                stroke="var(--color-border)"
+                strokeWidth="8"
+                fill="transparent"
+                className="opacity-30"
+              />
+              {/* Progress Circle */}
+              <circle
+                cx="100"
+                cy="100"
+                r="90"
+                stroke={mode === 'focus' ? 'var(--color-primary)' : 'var(--color-secondary)'}
+                strokeWidth="8"
+                fill="transparent"
+                strokeDasharray={2 * Math.PI * 90}
+                strokeDashoffset={(2 * Math.PI * 90) * (1 - progressPercentage / 100)}
+                className="transition-all duration-1000 ease-linear"
+                strokeLinecap="round"
+              />
+            </svg>
 
-        {/* Pulsing rings when active */}
-        {isActive && (
-          <>
-            <div 
-              className="absolute inset-[-30px] rounded-full border-2 animate-pulse-ring"
-              style={{ borderColor: mode === 'focus' ? 'var(--color-primary)' : 'var(--color-secondary)', opacity: 0.2 }}
-            />
-            <div 
-              className="absolute inset-[-50px] rounded-full border animate-pulse-ring"
-              style={{ borderColor: mode === 'focus' ? 'var(--color-primary)' : 'var(--color-secondary)', opacity: 0.1, animationDelay: '1s' }}
-            />
-          </>
-        )}
-
-        {/* Background Circle */}
-        <svg className="absolute top-0 left-0 w-full h-full transform -rotate-90">
-          <circle
-            cx="170"
-            cy="170"
-            r={radius}
-            stroke="var(--color-border)"
-            strokeWidth="12"
-            fill="transparent"
-          />
-          {/* Progress Circle */}
-          <circle
-            cx="170"
-            cy="170"
-            r={radius}
-            stroke={mode === 'focus' ? 'var(--color-primary)' : 'var(--color-secondary)'}
-            strokeWidth="12"
-            fill="transparent"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-1000 ease-linear"
-            strokeLinecap="round"
-            style={{
-              filter: isActive ? 'drop-shadow(0 0 8px currentColor)' : 'none',
-            }}
-          />
-        </svg>
-
-        {/* Time Display */}
-        <div className="text-center relative z-10">
-          <div className={`text-7xl font-bold font-mono text-on-surface tracking-tight transition-all ${isActive ? 'scale-105' : ''}`}>
-            {formatTime(timeLeft)}
+            {/* Time Display - Centered & Large */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className={`text-6xl sm:text-7xl lg:text-6xl font-bold font-mono text-on-surface tracking-tight transition-all ${isActive ? 'scale-105' : ''}`}>
+                {formatTime(timeLeft)}
+              </div>
+              <div className="text-xs text-on-surface-secondary mt-3 uppercase tracking-widest font-semibold px-4 py-1 bg-backplate rounded-full">
+                {mode === 'focus' ? 'Deep Work' : 'Recharge'}
+              </div>
+            </div>
           </div>
-          <div className="text-sm text-on-surface-secondary mt-2 uppercase tracking-wider font-medium">
-            {mode === 'focus' ? 'Deep Work' : 'Rest & Recharge'}
+
+          {/* Session Duration - Compact */}
+          <div className="text-center mb-6 pb-6 border-b border-border">
+            <p className="text-xs text-on-surface-secondary uppercase tracking-wider font-medium mb-1">
+              Session Duration
+            </p>
+            <p className="text-lg font-bold text-on-surface">
+              {Math.floor(duration / 60)} minutes
+            </p>
+          </div>
+
+          {/* Controls - Larger & Touch-Friendly */}
+          <div className="flex gap-4 items-center justify-center">
+            <button
+              onClick={resetTimer}
+              className="w-16 h-16 lg:w-14 lg:h-14 rounded-2xl bg-backplate border border-border text-on-surface-secondary flex items-center justify-center hover:text-on-surface hover:border-primary hover:rotate-[-180deg] active:scale-90 transition-all duration-500 cursor-pointer shadow-sm"
+            >
+              <RotateCcw size={24} className="lg:w-5 lg:h-5" />
+            </button>
+
+            <div className="relative">
+              {/* Subtle pulse ring when active */}
+              {isActive && (
+                <div className="absolute inset-[-8px] rounded-2xl border-2 animate-pulse" 
+                  style={{ 
+                    borderColor: mode === 'focus' ? 'var(--color-primary)' : 'var(--color-secondary)',
+                    opacity: 0.3
+                  }} 
+                />
+              )}
+              <button
+                onClick={toggleTimer}
+                className={`relative w-24 h-24 lg:w-20 lg:h-20 rounded-2xl bg-gradient-to-br ${
+                  mode === 'focus' ? 'from-primary to-primary' : 'from-secondary to-secondary'
+                } text-on-primary flex items-center justify-center transition-all active:scale-90 shadow-xl cursor-pointer ${
+                  isActive ? 'shadow-2xl' : 'hover:scale-105'
+                }`}
+              >
+                {isActive ? (
+                  <Pause size={40} className="lg:w-8 lg:h-8" fill="currentColor" />
+                ) : (
+                  <Play size={40} className="lg:w-8 lg:h-8 ml-1" fill="currentColor" />
+                )}
+              </button>
+            </div>
+
+            <button
+              onClick={toggleTimer}
+              className="w-16 h-16 lg:w-14 lg:h-14 rounded-2xl bg-backplate border border-border text-on-surface-secondary flex items-center justify-center hover:text-on-surface hover:border-primary active:scale-90 transition-all cursor-pointer shadow-sm opacity-0 pointer-events-none"
+            >
+              <RotateCcw size={24} />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex gap-4 items-center">
-        <div className="relative">
-          {/* Ripple effect when active */}
-          {isActive && (
-            <>
-              <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" />
-              <div className="absolute inset-[-8px] rounded-full border-2 border-primary/30 animate-pulse" />
-            </>
-          )}
-        <button
-          onClick={toggleTimer}
-            className={`relative w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center transition-all active:scale-95 shadow-md cursor-pointer ${
-              isActive ? 'btn-glow shadow-lg' : 'hover:shadow-lg hover:scale-105'
-            }`}
-        >
-          {isActive ? (
-            <Pause size={28} fill="currentColor" />
-          ) : (
-            <Play size={28} fill="currentColor" className="ml-0.5" />
-          )}
-        </button>
-        </div>
-
-        <button
-          onClick={resetTimer}
-          className="w-12 h-12 rounded-full bg-surface border border-border text-on-surface-secondary flex items-center justify-center hover:text-on-surface hover:border-primary hover:rotate-[-180deg] transition-all duration-500 cursor-pointer"
-        >
-          <RotateCcw size={18} />
-        </button>
+      {/* Quick Note - Compact */}
+      <div className="w-full max-w-sm">
+        <QuickNote />
       </div>
-
-      {/* Session Info */}
-      <div className="text-center">
-        <p className="text-xs text-on-surface-secondary uppercase tracking-wider font-medium mb-1">
-          Session Duration
-        </p>
-        <p className="text-lg font-semibold text-on-surface">
-          {Math.floor(duration / 60)} minutes
-        </p>
-      </div>
-
-      {/* Quick Note */}
-      <QuickNote />
 
       {/* Toast Notification */}
       <Toast

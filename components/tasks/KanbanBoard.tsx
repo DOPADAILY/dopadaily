@@ -199,60 +199,74 @@ export default function KanbanBoard() {
 
       {/* Header Actions */}
       {!isEmpty && (
-        <div className="flex items-center justify-between gap-4">
-          {/* View Toggle - Only show on md+ */}
-          <div className="hidden md:flex items-center gap-1 p-1 bg-backplate rounded-lg">
-            <button
-              onClick={() => setViewMode('board')}
-              className={`
-                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all
-                ${viewMode === 'board' ? 'bg-surface shadow-sm text-on-surface' : 'text-on-surface-secondary hover:text-on-surface'}
-              `}
-            >
-              <Columns size={16} />
-              Board
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`
-                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all
-                ${viewMode === 'list' ? 'bg-surface shadow-sm text-on-surface' : 'text-on-surface-secondary hover:text-on-surface'}
-              `}
-            >
-              <List size={16} />
-              List
-            </button>
-          </div>
-
-          {/* Right Actions */}
-          <div className="flex items-center gap-2 ml-auto">
-            {/* Add Task (Desktop) */}
-            <button
-              onClick={() => handleAddTask('todo')}
-              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-on-primary font-medium hover:bg-primary/90 transition-colors"
-            >
-              <Plus size={16} />
-              Add Task
-            </button>
-
-            {/* Clear Completed */}
-            {grouped.done.length > 0 && (
+        <>
+          <div className="flex items-center justify-between gap-4">
+            {/* View Toggle - Only show on md+ */}
+            <div className="hidden md:flex items-center gap-1 p-1.5 bg-backplate rounded-xl">
               <button
-                onClick={handleClearCompleted}
-                disabled={clearCompleted.isPending}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-on-surface-secondary hover:bg-backplate transition-colors disabled:opacity-50 text-sm"
+                onClick={() => setViewMode('board')}
+                className={`
+                  flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all active:scale-95
+                  ${viewMode === 'board' ? 'bg-surface shadow-sm text-on-surface' : 'text-on-surface-secondary hover:text-on-surface'}
+                `}
               >
-                {clearCompleted.isPending ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Trash2 size={14} />
-                )}
-                <span className="hidden sm:inline">Clear completed</span>
-                <span className="sm:hidden">{grouped.done.length}</span>
+                <Columns size={18} />
+                Board
               </button>
-            )}
+              <button
+                onClick={() => setViewMode('list')}
+                className={`
+                  flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all active:scale-95
+                  ${viewMode === 'list' ? 'bg-surface shadow-sm text-on-surface' : 'text-on-surface-secondary hover:text-on-surface'}
+                `}
+              >
+                <List size={18} />
+                List
+              </button>
+            </div>
+
+            {/* Right Actions */}
+            <div className="flex items-center gap-3 ml-auto">
+              {/* Add Task (Desktop) */}
+              <button
+                onClick={() => handleAddTask('todo')}
+                className="hidden md:flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-on-primary font-semibold hover:bg-primary/90 shadow-md active:scale-95 transition-all"
+              >
+                <Plus size={18} />
+                Add Task
+              </button>
+
+              {/* Clear Completed */}
+              {grouped.done.length > 0 && (
+                <button
+                  onClick={handleClearCompleted}
+                  disabled={clearCompleted.isPending}
+                  className="flex items-center gap-2 px-4 py-3 lg:py-2 rounded-full lg:rounded-lg border border-border text-on-surface-secondary hover:bg-backplate active:scale-95 transition-all disabled:opacity-50 text-sm font-medium"
+                >
+                  {clearCompleted.isPending ? (
+                    <Loader2 size={16} className="lg:w-3.5 lg:h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 size={16} className="lg:w-3.5 lg:h-3.5" />
+                  )}
+                  <span className="hidden sm:inline">Clear completed</span>
+                  <span className="sm:hidden">{grouped.done.length}</span>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+
+          {/* Floating Action Button (Mobile Only) */}
+          <button
+            onClick={() => handleAddTask('todo')}
+            className="md:hidden fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full bg-primary text-on-primary shadow-lg flex items-center justify-center active:scale-95 transition-all"
+            style={{
+              boxShadow: '0 8px 24px rgba(184, 156, 134, 0.4)',
+            }}
+            aria-label="Add task"
+          >
+            <Plus size={24} strokeWidth={3} />
+          </button>
+        </>
       )}
 
       {/* Board View */}

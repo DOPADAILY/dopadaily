@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import AnimatedBackground from './AnimatedBackground'
+import MobileBottomNav from './MobileBottomNav'
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -17,14 +18,19 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
     return <main className="min-h-screen">{children}</main>
   }
 
-  // On mobile: no margin, On desktop: margin for sidebar
+  // On mobile: bottom padding for floating nav, On desktop: margin for sidebar
   return (
-    <main className="min-h-screen lg:ml-64 relative">
-      <AnimatedBackground variant={isFocusPage ? 'focus' : 'default'} />
-      <div className="relative">
-        {children}
-      </div>
-    </main>
+    <>
+      <main className="min-h-dvh lg:ml-64 relative pb-24 lg:pb-0">
+        {/* <AnimatedBackground variant={isFocusPage ? 'focus' : 'default'} /> */}
+        <div className="relative">
+          {children}
+        </div>
+      </main>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
+    </>
   )
 }
 
